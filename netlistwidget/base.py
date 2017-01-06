@@ -28,7 +28,7 @@ class NetlistWidget(QWidget):
         QWidget.__init__(self)
 
         self.setWindowTitle('PyPHS Editor')
-        self.initUI()
+        self.initMessage()
 
     def initUI(self):
 
@@ -102,8 +102,6 @@ class NetlistWidget(QWidget):
         self.addlineAction.setStatusTip('Add a new line to the netlist')
         self.addlineAction.triggered.connect(self._new_line)
 
-        self.initMessage()
-
         self.resize(self.table.sizeHint())
         self.show()
 
@@ -155,21 +153,31 @@ class NetlistWidget(QWidget):
 
     def _new(self):
         fname = QFileDialog.getSaveFileName(self, "New netlist file")[0]
-        if not fname[-4:] == '.net':
-            fname += '.net'
-        self.filename = fname
-        print('Netlist filename: ', fname)
-        self.Netlist = PHSNetlist(self.filename)
-        self.update()
+        if not fname == '':
+            if not fname[-4:] == '.net':
+                fname += '.net'
+            self.initUI()
+            self.filename = fname
+            print('Netlist filename: ', fname)
+            self.Netlist = PHSNetlist(self.filename)
+            self.update()
+            self._new = True
+        else:
+            self._new = False
 
     def _open(self):
 
         fname = QFileDialog.getOpenFileName(self,
                                             'Open netlist file',
                                             os.getcwd())
-        self.filename = fname[0]
-        self.Netlist = PHSNetlist(self.filename)
-        self.update()
+        if not fname[0] == '':
+            self.initUI()
+            self.filename = fname[0]
+            self.Netlist = PHSNetlist(self.filename)
+            self.update()
+            self._new = True
+        else:
+            self._new = False
 
     def _saveas(self):
         fname = QFileDialog.getSaveFileName(self, "Save netlist file as")[0]

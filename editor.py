@@ -8,12 +8,18 @@ Created on Tue Jan  3 14:52:19 2017
 from __future__ import absolute_import
 
 from PyQt5.QtWidgets import QApplication
-from pyphs.pyphs_gui.editor_mainwindow import NetlistEditor
+from editor_mainwindow import NetlistEditor
 import sys
 import os
 
+os.chdir(os.path.dirname(sys.argv[0]))
+
 
 def editor():
-	app = QApplication(sys.argv)
-	e = NetlistEditor()
-	sys.exit(app.exec_())
+    app = QApplication(sys.argv)
+    e = NetlistEditor()
+    sys.exit(app.exec_())
+
+
+if __name__ is '__main__':
+    editor()

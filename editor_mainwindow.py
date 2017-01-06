@@ -17,20 +17,22 @@ from __future__ import absolute_import, division, print_function
 from PyQt5.QtWidgets import (QAction, qApp, QMainWindow)
 from PyQt5.QtGui import QIcon
 
-from pyphs.pyphs_gui.netlistwidget import NetlistWidget
-from pyphs.pyphs_gui.netlistwidget.base import iconspath
+from netlistwidget import NetlistWidget
+from netlistwidget.base import iconspath
 
 
 class NetlistEditor(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-
-        self.initUI()
+        self.netlist = NetlistWidget()
+        if self.netlist._new:
+            self.initUI()
+        else:
+            qApp.quit()
 
     def initUI(self):
 
-        self.netlist = NetlistWidget()
         self.setCentralWidget(self.netlist)
 
         #############################################################
