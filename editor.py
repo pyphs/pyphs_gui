@@ -12,13 +12,11 @@ from editor_mainwindow import NetlistEditor
 import sys
 import os
 
-os.chdir(os.path.dirname(sys.argv[0]))
-
 
 def editor():
-    app = QApplication(sys.argv)
-    e = NetlistEditor()
-    sys.exit(app.exec_())
+	app = QApplication(sys.argv)
+	e = NetlistEditor()
+	sys.exit(app.exec_())
 
 
 if __name__ is '__main__':
