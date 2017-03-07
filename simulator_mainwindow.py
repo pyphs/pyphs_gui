@@ -17,23 +17,22 @@ from __future__ import absolute_import, division, print_function
 from PyQt5.QtWidgets import (QAction, qApp, QMainWindow)
 from PyQt5.QtGui import QIcon
 
-from netlistwidget import NetlistWidget
-from netlistwidget.base import iconspath
+from simulationwidget.base_new import iconspath, SimulationWidget
 
 
-class NetlistEditor(QMainWindow):
+class Simulation(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        self.netlist = NetlistWidget()
-        if self.netlist._new:
+        self.simulation = SimulationWidget()
+        if self.simulation._new:
             self.initUI()
         else:
             qApp.quit()
 
     def initUI(self):
 
-        self.setCentralWidget(self.netlist)
+        self.setCentralWidget(self.simulation)
 
         #############################################################
         #############################################################
@@ -54,15 +53,14 @@ class NetlistEditor(QMainWindow):
 
         # TOOLBAR
 
-        self.toolbarNetlist = self.addToolBar('Netlist')
-        self.toolbarNetlist.addAction(self.netlist.newAction)
-        self.toolbarNetlist.addAction(self.netlist.openAction)
-        self.toolbarNetlist.addAction(self.netlist.saveAction)
-        self.toolbarNetlist.addAction(self.netlist.saveasAction)
-        self.toolbarNetlist.addAction(self.netlist.addlineAction)
-        self.toolbarNetlist.addAction(self.netlist.editAction)
-        self.toolbarNetlist.addAction(self.netlist.plotgraphAction)
-        self.toolbarNetlist.addAction(self.netlist.simuAction)
+        self.toolbarSimulation = self.addToolBar('Simulation')
+        self.toolbarSimulation.addAction(self.simulation.newAction)
+        self.toolbarSimulation.addAction(self.simulation.openAction)
+        self.toolbarSimulation.addAction(self.simulation.saveAction)
+        self.toolbarSimulation.addAction(self.simulation.saveasAction)
+        self.toolbarSimulation.addAction(self.simulation.addlineAction)
+        self.toolbarSimulation.addAction(self.simulation.editAction)
+        self.toolbarSimulation.addAction(self.simulation.plotgraphAction)
 
         #############################################################
         #############################################################
@@ -87,23 +85,20 @@ class NetlistEditor(QMainWindow):
 
         # PyPHS menu
         fileMenu = menubar.addMenu('&Netlist')
-        fileMenu.addAction(self.netlist.newAction)
-        fileMenu.addAction(self.netlist.openAction)
-        fileMenu.addAction(self.netlist.saveAction)
-        fileMenu.addAction(self.netlist.saveasAction)
+        fileMenu.addAction(self.simulation.newAction)
+        fileMenu.addAction(self.simulation.openAction)
+        fileMenu.addAction(self.simulation.saveAction)
+        fileMenu.addAction(self.simulation.saveasAction)
         fileMenu.addAction(exitAction)
 
         # Netlist menu
         netlistMenu = menubar.addMenu('&Line')
-        netlistMenu.addAction(self.netlist.addlineAction)
-        netlistMenu.addAction(self.netlist.editAction)
+        netlistMenu.addAction(self.simulation.addlineAction)
+        netlistMenu.addAction(self.simulation.editAction)
 
         # Plots menu
         plotsMenu = menubar.addMenu('&Plots')
-        plotsMenu.addAction(self.netlist.plotgraphAction)
-
-        simuMenu = menubar.addMenu('&Simulation')
-        simuMenu.addAction(self.netlist.simuAction)
+        plotsMenu.addAction(self.simulation.plotgraphAction)
 
         #############################################################
 

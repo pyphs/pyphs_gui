@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import os
-from PyQt5.QtWidgets import (QWidget, QAction, QLabel,
+from PyQt5.QtWidgets import (QWidget, QAction,
                              QApplication, QFileDialog,
                              QPushButton, QMessageBox,
                              QTableWidget, QTableWidgetItem, QInputDialog,
@@ -18,11 +18,11 @@ from PyQt5.QtWidgets import (QWidget, QAction, QLabel,
 from PyQt5.QtGui import QIcon
 from pyphs import PHSNetlist, PHSGraph
 from .edit import EditDialog
-from .base_simu import SimuWidget
+
 iconspath = '.' + os.sep + 'icons' + os.sep
 
 
-class NetlistWidget(QWidget):
+class SimulationWidget(QWidget):
 
     def __init__(self):
         QWidget.__init__(self)
@@ -49,8 +49,6 @@ class NetlistWidget(QWidget):
         # set Layout
         self.grid = QGridLayout()
         self.grid.addWidget(self.table, 0, 0)
-        self.simu = QLabel('', self)
-        self.grid.addWidget(self.simu, 0, 1)
         self.setLayout(self.grid)
 
         # Netlist Actions
@@ -96,13 +94,6 @@ class NetlistWidget(QWidget):
         self.plotgraphAction.setShortcut('Ctrl+G')
         self.plotgraphAction.setStatusTip('Plot the graph')
         self.plotgraphAction.triggered.connect(self._plot_graph)
-
-        # PlotGraph Action
-        self.simuAction = QAction(QIcon(iconspath + 'signal.png'),
-                                  '&Simulation tool', self)
-        self.simuAction.setShortcut('Ctrl+Shift+S')
-        self.simuAction.setStatusTip('Show simulation tool')
-        self.simuAction.triggered.connect(self._simu)
 
         # addline Action
         self.addlineAction = QAction(QIcon(iconspath + 'add.png'),
@@ -205,15 +196,6 @@ class NetlistWidget(QWidget):
         if res:
             self.Netlist.add_line(netline)
             self.update()
-
-    def _simu(self):
-        item = self.grid.itemAtPosition(0, 1)
-        if item is not None:
-            w = item.widget()
-            w.setParent(None)
-            self.grid.removeWidget(w)
-        self.simu = SimuWidget(fname=(self.filename, None))
-        self.grid.addWidget(self.simu, 0, 1)
 
     def _edit_line(self):
         text, ok = QInputDialog.getText(self,

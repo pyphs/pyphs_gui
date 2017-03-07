@@ -8,13 +8,13 @@ Created on Tue Jan  3 14:52:19 2017
 from __future__ import absolute_import
 
 from PyQt5.QtWidgets import QApplication
-from editor_mainwindow import NetlistEditor
+from simulator_mainwindow import Simulation
 import sys
 
 
 def editor():
     app = QApplication(sys.argv)
-    e = NetlistEditor()
+    e = Simulation()
     sys.exit(app.exec_())
 
 
