@@ -19,8 +19,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QApplication, QLabel,
 from PyQt5.QtCore import Qt
 iconspath = '.' + os.sep + 'icons' + os.sep
 from pyphs.misc.signals.synthesis import parameters, names, signalgenerator
-from pyphs import netlist2core, PHSSimulation
-from pyphs.config import standard_simulations as config
+from pyphs import netlist2core, Simulation
+from pyphs.config import simulations as config
 
 
 class GradientWidget(QWidget):

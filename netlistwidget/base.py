@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (QWidget, QAction, QLabel,
                              QTableWidget, QTableWidgetItem, QInputDialog,
                              QGridLayout, QAbstractItemView)
 from PyQt5.QtGui import QIcon
-from pyphs import PHSNetlist, PHSGraph
+from pyphs import Netlist, Graph
 from .edit import EditDialog
 from .base_simu import SimuWidget
 iconspath = '.' + os.sep + 'icons' + os.sep
@@ -168,7 +168,7 @@ class NetlistWidget(QWidget):
             self.initUI()
             self.filename = fname
             print('Netlist filename: ', fname)
-            self.Netlist = PHSNetlist(self.filename)
+            self.Netlist = Netlist(self.filename)
             self.update()
             self._new = True
         else:
@@ -182,7 +182,7 @@ class NetlistWidget(QWidget):
         if not fname[0] == '':
             self.initUI()
             self.filename = fname[0]
-            self.Netlist = PHSNetlist(self.filename)
+            self.Netlist = Netlist(self.filename)
             self.update()
             self._new = True
         else:
@@ -197,7 +197,7 @@ class NetlistWidget(QWidget):
         self.Netlist.write()
 
     def _plot_graph(self):
-        self.Graph = PHSGraph(netlist=self.Netlist)
+        self.Graph = Graph(netlist=self.Netlist)
         self.Graph.plot()
 
     def _new_line(self):

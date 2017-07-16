@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+
+<svg 
+     version="1.1"
+     baseProfile="full"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns:ev="http://www.w3.org/2001/xml-events"
+     width="64.91111111111111cm"
+     height="35.27777777777778cm"
+     viewBox="0 0 1060 576"
+     >
+<title>
+
+</title>
+<g stroke-linejoin="miter" stroke-dashoffset="0.0000" stroke-dasharray="none" stroke-width="1.0000" stroke-miterlimit="10.000" stroke-linecap="square">
+<g id="misc">
+</g><!-- misc -->
+<g id="layer0">
+<clipPath id="clipb551d115-685c-45be-9e9f-e3072d9ccd81">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip1)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 375.73 259.85 C 353.20 266.43 339.84 289.58 345.41 312.38"/>
+<title>Arc c_1</title>
+<desc>Arc c_1: ArcCercle[A, S, C_1]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip1 -->
+<clipPath id="clip89ca33d9-01d7-4ae8-b26a-41aa74369941">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip2)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 357.69 333.65 C 374.65 349.88 401.38 349.88 418.34 333.65"/>
+<title>Arc d_1</title>
+<desc>Arc d_1: ArcCercle[A, D_1, V]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip2 -->
+<clipPath id="clipa0d9e6a4-630e-4411-90e2-30b3e5f7bf14">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip3)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 430.62 312.38 C 436.20 289.58 422.83 266.43 400.30 259.85"/>
+<title>Arc e_1</title>
+<desc>Arc e_1: ArcCercle[A, U, T]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip3 -->
+<clipPath id="clip6851dddf-f901-403a-abbf-247591423b77">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip4)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 375.73 197.41 C 342.72 201.29 313.48 220.54 296.85 249.33 C 280.23 278.12 278.19 313.07 291.34 343.60"/>
+<title>Arc h_1</title>
+<desc>Arc h_1: ArcCercle[A, Q, B_1]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip4 -->
+<clipPath id="clipa97646f1-d66e-4a9a-af92-f774979609ad">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip5)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 303.62 364.87 C 323.48 391.52 354.77 407.22 388.02 407.22 C 421.26 407.22 452.55 391.52 472.41 364.87"/>
+<title>Arc k_1</title>
+<desc>Arc k_1: ArcCercle[A, A_1, W]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip5 -->
+<clipPath id="clipb560843b-306d-402f-8003-3a9ea8339f36">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip6)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 484.70 343.60 C 497.84 313.07 495.80 278.12 479.18 249.33 C 462.56 220.54 433.31 201.29 400.30 197.41"/>
+<title>Arc p_1</title>
+<desc>Arc p_1: ArcCercle[A, Z, R]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip6 -->
+<clipPath id="clip8b36fc84-edc0-4f92-9200-48c7f6a06095">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip7)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 291.34 343.60 L 345.41 312.38"/>
+<title>Segment i_1</title>
+<desc>Segment i_1: Segment [B_1C_1]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip7 -->
+<clipPath id="clip7fd64bf6-2a56-4119-a767-ab6a1e534a8b">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip8)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 303.62 364.87 L 357.69 333.65"/>
+<title>Segment j_1</title>
+<desc>Segment j_1: Segment [A_1D_1]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip8 -->
+<clipPath id="clipa7591b77-2da7-4ec5-8158-b94a24dbfdef">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip9)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 418.34 333.65 L 472.41 364.87"/>
+<title>Segment l_1</title>
+<desc>Segment l_1: Segment [VW]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip9 -->
+<clipPath id="clip97e52f12-581f-436c-bd04-deacf347134e">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip10)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 430.62 312.38 L 484.70 343.60"/>
+<title>Segment m_1</title>
+<desc>Segment m_1: Segment [UZ]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip10 -->
+<clipPath id="clip2769f0cf-d181-4f0a-82f2-395de7b99f65">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip11)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 400.30 259.85 L 400.30 197.41"/>
+<title>Segment n_1</title>
+<desc>Segment n_1: Segment [TR]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip11 -->
+<clipPath id="clipf18a107b-7006-4ada-9021-0764fb0e6547">
+  <path d="M 0.0000 0.0000 L 0.0000 576.00 L 1060.0 576.00 L 1060.0 0.0000 z"/>
+</clipPath>
+<g clip-path="url(#clip12)">
+<g stroke-linejoin="round" stroke-width="6.5000" stroke-linecap="round" fill="none" stroke-opacity="1.0000" stroke="#000000">
+  <path d="M 375.73 197.41 L 375.73 259.85"/>
+<title>Segment q_1</title>
+<desc>Segment q_1: Segment [QS]</desc>
+
+</g> <!-- drawing style -->
+</g> <!-- clip12 -->
+</g><!-- layer0 -->
+</g> <!-- default stroke -->
+</svg> <!-- bounding box -->
