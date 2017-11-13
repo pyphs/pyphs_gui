@@ -1,0 +1,5 @@
+electronics.source input ('#', 'A'): type=voltage;
+electronics.diode d1 ('B', '#'): Is=('Is', 2e-09); R=('Rd', 0.5); v0=('v0', 0.026); mu=('mu', 1.7);
+electronics.capacitor C ('A', 'B'): C=('Csymbol', 1e-09);
+electronics.source output ('B', '#'): type=current;
+electronics.diode d2 ('#', 'B'): Is=('Is', 2e-09); R=('Rd', 0.5); v0=('v0', 0.026); mu=('mu', 1.7);

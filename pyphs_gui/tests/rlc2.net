@@ -1,0 +1,2 @@
+electronics.source in ('#', 'n1'): type=voltage;
+electronics.resistor R ('n1', '#'): R=R;
