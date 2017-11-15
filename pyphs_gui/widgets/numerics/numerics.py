@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -7,212 +6,75 @@ Created on Fri Nov 10 16:05:03 2017
 @author: afalaize
 """
 
-
 from __future__ import absolute_import, division, print_function
 
-import sys
 import os
-from PyQt5.QtWidgets import (QWidget, QAction, QLabel, QVBoxLayout,
-                             QApplication, QFileDialog, QHBoxLayout,
-                             QPushButton, QMessageBox, QLineEdit,
-                             QTableWidget, QTableWidgetItem, QInputDialog,
-                             QGridLayout, QAbstractItemView)
-from PyQt5.QtGui import QIcon, QFont
-from pyphs import Core, Graph, datum, Method
+from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QFileDialog,
+                             QHBoxLayout, QPushButton, QLineEdit, QLabel)
 
-from pyphs.misc.tools import geteval
-
-from ..misc.tools import DescriptionWidget
-from ..misc.latex import LatexLabel
-
-from ..misc.tools import Element, NoneSig, BoolSig
+from ..misc.signals import BoolSig
 
 from pyphs import netlist2tex, core2tex, graphplot2tex, texdocument
-from pyphs import Core
+from pyphs.misc import juce, faust
 
+from ..misc import TitleWidget, ParametersWidget, DescriptionWidget
+from ..misc.fonts import boldFont
+from PyQt5.QtGui import QIcon
 from .. import iconspath
-from .editdialog import InitDialog
+from .inits import InitWidget
+from .io import IoWidget
 
-from pyphs.misc.juce import fx
-from pyphs.misc.faust import write_faust_fx, MethodInvMat
-
-class InitWidget(QWidget):
-
-    statusSig = BoolSig()
-    modifSig = NoneSig()
-
-    _status = False
-    _label = None
-    _names = 'x', 'dx', 'w', 'u', 'p', 'o'
-    inits = {}
-
-    def get_method(self):
-        return self.methodWidget.method
-    method = property(get_method)
-
-    def __init__(self, methodWidget, parent=None):
-
-        super(InitWidget, self).__init__(parent)
-
-        self.methodWidget = methodWidget
-
-        self.initUI()
-
-    def symb2ref(self, symb):
-        symb = self.method.symbols(str(symb))
-        for name in self._names:
-            symbs = geteval(self.method, name)
-            if symb in symbs:
-                index = symbs.index(symb)
-            return (name, index)
-
-    def ref2symb(self, ref):
-        symb = geteval(self.method, ref[0])[ref[1]]
-        return symb
-
-    def initUI(self):
-
-        self.methodWidget.modifSig.sig.connect(self.init)
-        self.init()
-
-        font = QFont()
-        font.setBold(True)
-        title = QHBoxLayout()
-
-        core_title = QLabel('Initial values')
-        core_title.setFont(font)
-
-        title.addWidget(core_title)
-        title.addStretch()
-
-        self.toolbar = QHBoxLayout()
-
-        # Open Action
-        load_icon = QIcon(os.path.join(iconspath, 'open.png'))
-        self.loadAction = QAction(load_icon,
-                                  '&Load initial values', self)
-        self.loadAction.setShortcut('Ctrl+I')
-        self.loadAction.setStatusTip('Load initial values')
-        self.loadAction.triggered.connect(self._load)
-        loadButton = QPushButton(load_icon, '')
-        loadButton.setToolTip('Load initial values')
-        loadButton.clicked.connect(self._load)
-        self.toolbar.addWidget(loadButton)
-
-        # Save Action
-        save_icon = QIcon(os.path.join(iconspath, 'save.png'))
-        self.saveAction = QAction(save_icon,
-                                  '&Save initial values', self)
-        self.saveAction.setShortcut('Ctrl+S')
-        self.saveAction.setStatusTip('Save initial values')
-        self.saveAction.triggered.connect(self._save)
-        saveButton = QPushButton(save_icon, '')
-        saveButton.setToolTip('Save the netlist')
-        saveButton.clicked.connect(self._save)
-        self.toolbar.addWidget(saveButton)
-
-        # Editline Action
-        edit_icon = QIcon(os.path.join(iconspath, 'edit.png'))
-        self.editAction = QAction(edit_icon,
-                                  '&Edit initial values', self)
-        self.editAction.setShortcut('Ctrl+E')
-        self.editAction.setStatusTip('Edit initial values')
-        self.editAction.triggered.connect(self._edit)
-        editButton = QPushButton(edit_icon, '')
-        editButton.setToolTip('Edit initial values')
-        editButton.clicked.connect(self._edit)
-        self.toolbar.addWidget(editButton)
-
-        title.addLayout(self.toolbar)
-        self.setLayout(title)
-
-    def init(self):
-        for name in self._names:
-            self.inits[name] = [0.]*len(geteval(self.method, name))
-
-    def _edit(self):
-        if not self.methodWidget.status.text() == 'Build OK':
-            self.methodWidget._build()
-        dialog = InitDialog(self, self)
-        res = dialog.getInits(self, self)
-        if res[1]:
-            self.inits = res[0]
-
-    def _load(self):
-        if not self.methodWidget.status.text() == 'Build OK':
-            self.methodWidget._build()
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        dialog = QFileDialog()
-        filename = os.path.join(self.methodWidget.folder,
-                                self.method.label + '.init')
-        dialog.selectFile(filename)
-        fname, _ = dialog.getOpenFileName(self,
-                                          'Load initial values',
-                                          filename,
-                                          "All Files (*);;PyPHS initial values (*.init)",
-                                          "PyPHS initial values (*.init)",
-                                          options=options)
-        if not fname == '':
-            with open(fname, 'r') as f:
-                for name in self._names:
-                    line = f.readline()
-                    if len(line) > 0:
-                        values = list(map(float, line.split(' ')))
-                        if not len(values) == len(geteval(self.method, name)):
-                            text = 'Initial values shape error: ' + name
-                            raise ValueError(text)
-                    else:
-                        values = []
-                    self.inits[name] = values
-
-    def _save(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        dialog = QFileDialog()
-        filename = os.path.join(self.methodWidget.folder, self.method.label + '.init')
-        dialog.selectFile(filename)
-        fname, _ = dialog.getSaveFileName(self,
-                                          "Save initial values file as...",
-                                          filename,
-                                          "All Files (*);;PyPHS initial values (*.init)",
-                                          "PyPHS initial values (*.init)",
-                                          options=options)
-        if not fname == '':
-            if not fname[-5:] == '.init':
-                fname += '.init'
-            try:
-                os.remove(fname)
-            except:
-                pass
-            with open(fname, 'w') as f:
-                for name in self._names:
-                    line = ' '.join(list(map(str, self.inits[name])))+'\n'
-                    f.write(line)
-
-###############################################################################
 
 class NumericWidget(QWidget):
 
-    _status = False
-    _label = None
-
-    config = {'eps': 1e-9,
-              'epsdg': 1e-12,
-              'fs': 48000.0,
-              'maxit': 10}
-
-    def get_method(self):
-        return self.methodWidget.method
-    method = property(get_method)
+    def get_net(self):
+        return self.methodWidget.net
+    net = property(get_net)
 
     def get_folder(self):
         return self.methodWidget.folder
     folder = property(get_folder)
 
+    def get_label(self):
+        return self.methodWidget.label
+    label = property(get_label)
+
+    def get_core(self):
+        return self.methodWidget.method.core
+    core = property(get_core)
+
+    def get_method(self):
+        return self.methodWidget.method
+    method = property(get_method)
+
+    def get_status(self):
+        return self.methodWidget.status
+    status = property(get_status)
+
+    def get_inout(self):
+        inputs = []
+        outputs = []
+        for i in range(self.method.dims.y()):
+            if self.io.io['u'][i]:
+                inputs.append(self.method.u[i])
+            else:
+                inputs.append(self.inits['u'][i])
+            if self.io.io['y'][i]:
+                outputs.append(self.method.y[i])
+            else:
+                pass
+        return inputs, outputs
+
+    inout = property(get_inout)
+
     def __init__(self, methodWidget, parent=None):
 
         super(NumericWidget, self).__init__(parent)
+
+        self.parameters = {'eps': 1e-9,
+                           'epsdg': 1e-12,
+                           'fs': 48000.0,
+                           'maxit': 10}
 
         self.methodWidget = methodWidget
 
@@ -220,19 +82,14 @@ class NumericWidget(QWidget):
 
     def initUI(self):
 
+        self.numeric = self.method.to_numeric()
+
         self.statusSig = BoolSig()
-        self.modifSig = NoneSig()
 
-        vbox = QVBoxLayout()
-        font = QFont()
-        font.setBold(True)
-        title = QHBoxLayout()
+        # ---------------------------------------------------------------------
+        # Define Method Actions
 
-        core_title = QLabel('Numeric')
-        core_title.setFont(font)
-
-        title.addWidget(core_title)
-        title.addStretch()
+        buttonsLayout = QHBoxLayout()
 
         # cpp export Action
         cpp_icon = QIcon(os.path.join(iconspath, 'c++.png'))
@@ -244,7 +101,7 @@ class NumericWidget(QWidget):
         cppbutton = QPushButton(cpp_icon, '')
         cppbutton.setToolTip('Export c++ code')
         cppbutton.clicked.connect(self._writecpp)
-        title.addWidget(cppbutton)
+        buttonsLayout.addWidget(cppbutton)
 
         # faust export Action
         faust_icon = QIcon(os.path.join(iconspath, 'faust.png'))
@@ -256,7 +113,7 @@ class NumericWidget(QWidget):
         faustbutton = QPushButton(faust_icon, '')
         faustbutton.setToolTip('Export FAUST code')
         faustbutton.clicked.connect(self._writefaust)
-        title.addWidget(faustbutton)
+        buttonsLayout.addWidget(faustbutton)
 
         # juce export Action
         juce_icon = QIcon(os.path.join(iconspath, 'juce.png'))
@@ -268,50 +125,78 @@ class NumericWidget(QWidget):
         jucebutton = QPushButton(juce_icon, '')
         jucebutton.setToolTip('Export JUCE code')
         jucebutton.clicked.connect(self._writejuce)
-        title.addWidget(jucebutton)
+        buttonsLayout.addWidget(jucebutton)
 
-        vbox.addLayout(title)
+        # ---------------------------------------------------------------------
+        # title widget
 
-        self.inits = InitWidget(self.methodWidget, parent=self)
+        title = 'NUMERIC'
+
+        self.labelWidget = QLabel(title)
+        self.labelWidget.setFont(boldFont)
+
+        titleLayout = QHBoxLayout()
+
+        titleLayout.addWidget(self.labelWidget)
+        titleLayout.addStretch()
+        titleLayout.addLayout(buttonsLayout)
+
+        self.titleWidget = QWidget()
+        self.titleWidget.setLayout(titleLayout)
+        self.titleWidget.setFixedWidth(TitleWidget().width())
+
+        # ---------------------------------------------------------------------
+        # set parameters
+
+        content = {'fs': {'desc': 'Sample Rate (Hz)',
+                          'label': 'Sample Rate',
+                          'value': self.parameters['fs'],
+                          'type': 'float',
+                          },
+
+                   'maxit': {'desc': 'Maximum number of implicit iterations.',
+                             'label': 'Iterations',
+                             'value': self.parameters['maxit'],
+                             'type': 'int',
+                             },
+
+                   'eps': {'desc': 'Numerical tolerance on implicit iterations.',
+                           'label': 'Tolerance',
+                           'value': self.parameters['eps'],
+                           'type': 'float',
+                           },
+                   }
+
+        tooltip = 'Numerical parameters'
+
+        self.parametersWidget = ParametersWidget('', content, tooltip)
+
+        # ---------------------------------------------------------------------
+        # inits
+
+        self.inits = InitWidget(self.methodWidget)
+        self.inits.setFixedWidth(TitleWidget().width())
+
+        # ---------------------------------------------------------------------
+        # io
+
+        self.io = IoWidget(self.methodWidget)
+        self.io.setFixedWidth(TitleWidget().width())
+
+        # ---------------------------------------------------------------------
+        # set Layout
+        vbox = QVBoxLayout(self)
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.addWidget(self.titleWidget)
         vbox.addWidget(self.inits)
-        # --------------------
-
-        self.positions = {'fs': (0, 0),
-                          'maxit': (0, 1), 'eps': (0, 2),
-                          }
-
-        self.content = {'fs': {'desc': 'Sample Rate (Hz)',
-                               'label': 'Sample Rate',
-                               'value': self.config['fs'],
-                               'type': 'float',
-                               },
-
-                        'maxit': {'desc': 'Maximum number of implicit iterations.',
-                                  'label': 'Iterations',
-                                  'value': self.config['maxit'],
-                                  'type': 'int',
-                                  },
-                        'eps': {'desc': 'Numerical tolerance on implicit iterations.',
-                                  'label': 'Tolerance',
-                                  'value': self.config['eps'],
-                                  'type': 'float',
-                                  },
-                        }
-
-        self.grid = QGridLayout()
-
-        for k in self.content.keys():
-            self.grid.addWidget(Element(**self.content[k]), *self.positions[k])
-
-        vbox.addLayout(self.grid)
-
+        vbox.addWidget(self.io)
+        vbox.addWidget(self.parametersWidget)
         self.setLayout(vbox)
+        self.setContentsMargins(0, 0, 0, 0)
 
-    def update_config(self):
-        for k in self.content.keys():
-            item = self.grid.itemAtPosition(*self.positions[k])
-            widget = item.widget()
-            self.config[k] = widget.data['value']
+    def _update_parameters(self):
+        if not self.parameters == self.parametersWidget.parameters:
+            self.parameters.update(self.parametersWidget.parameters)
 
     def _writecpp(self):
         if not self.methodWidget.status.text() == 'Build OK':
@@ -336,7 +221,7 @@ class NumericWidget(QWidget):
             self.method.to_cpp(**args)
 
     def _writejuce(self):
-        if not self.methodWidget.status.text() == 'Build OK':
+        if not self.status:
             self.methodWidget._build()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -347,12 +232,13 @@ class NumericWidget(QWidget):
                                              self.folder,
                                              options=options)
         if not folder == '':
-            self.update_config()
-            fx.method2jucefx(self.method, path=folder,
-                             io=None, inits=self.inits.inits,
-                             config=self.config)
+            juce.fx.method2jucefx(self.method, path=folder,
+                             io=self.inout, inits=self.inits.inits,
+                             config=self.parameters)
 
     def _writefaust(self):
+        if not self.methodWidget.coreWidget.status:
+            self.methodWidget.coreWidget._build()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         dialog = QFileDialog()
@@ -369,18 +255,13 @@ class NumericWidget(QWidget):
                 self.methodWidget._build()
             if not fname.endswith('.dsp'):
                 fname += '.dsp'
-            self.update_config()
-            print('reduce Z')
-            self.method._core.reduce_z()
-            print('substitute')
-            self.method._core.substitute(selfall=True)
-            print('inverse')
-            methodIMat = MethodInvMat(self.method._core,
-                                      self.methodWidget.config,
-                                      self.method.label)
-            print('write')
-            write_faust_fx(methodIMat, path=fname,
-                           inputs=None, outputs=None,
-                           inits=self.inits.inits, nIt=self.config['maxit'])
+            print('FAUST: preinversion')
+            methodIMat = faust.MethodInvMat(self.method._core,
+                                            self.methodWidget.config,
+                                            self.method.label)
+            print('FAUST: write '+fname)
 
-###############################################################################
+            faust.write_faust_fx(methodIMat, path=fname,
+                                 inputs=self.inout[0], outputs=self.inout[1],
+                                 inits=self.inits.inits,
+                                 nIt=self.parameters['maxit'])

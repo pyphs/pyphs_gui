@@ -15,15 +15,15 @@ from pyphs.graphs.exceptions import (CanNotUnlock, EffortCtrlIsFluxCtrl,
                                      FluxCtrlIsEffortCtrl, UndefinedPotential)
 
 
-def perform_analysis(netlist, parent):
+def perform_analysis(graph, parent):
 
-    if not hasattr(netlist.graph, 'analysis'):
-        netlist.graph._build_analysis()
+    if not hasattr(graph, 'analysis'):
+        graph._build_analysis()
 
     text = ''
 
     try:
-        netlist.graph.analysis.perform()
+        graph.analysis.perform()
 
     except UndefinedPotential as error:
         text += 'UndefinedPotential: ' + error.__str__()
@@ -42,8 +42,7 @@ def perform_analysis(netlist, parent):
 
     if len(text) > 0:
         temp = 'Can not complete the realizability analysis of\n'
-        temp += 'netlist "{}"\n'.format(netlist.filename)
-        temp += 'from folder "{}"\n'.format(netlist.folder)
+        temp += 'netlist "{}"\n'.format(graph.label)
         text = temp + text
         QMessageBox.question(parent, 'Realizability issue', text,
                              QMessageBox.Ok, QMessageBox.Ok)

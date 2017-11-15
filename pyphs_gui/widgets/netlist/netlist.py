@@ -8,31 +8,40 @@ Created on Tue Jan  3 11:54:56 2017
 
 from __future__ import absolute_import, division, print_function
 
-import sys
 import os
 from PyQt5.QtWidgets import (QWidget, QAction, QLabel, QVBoxLayout,
-                             QApplication, QFileDialog, QHBoxLayout,
+                             QFileDialog, QHBoxLayout,
                              QPushButton, QMessageBox,
-                             QTableWidget, QTableWidgetItem, QInputDialog,
-                             QGridLayout, QAbstractItemView)
+                             QTableWidget, QTableWidgetItem,
+                             QAbstractItemView)
 
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtGui import QIcon
 
-from pyphs import Netlist, Graph, datum
+
+from pyphs import Netlist, datum
 from .editdialog import EditDialog
 
-
-from .tools import perform_analysis
-from ..misc.tools import DescriptionWidget, NoneSig, BoolSig
+from ..misc.tools import DescriptionWidget
+from ..misc.signals import NoneSig, BoolSig
+from ..misc import TitleWidget
 from .. import iconspath
 
 
 class NetlistWidget(QWidget):
 
+    def get_status(self):
+        return self.titleWidget.status
+    status = property(get_status)
+
+    def get_label(self):
+        fn = self.netlist.filename
+        label = fn[:fn.rfind('.')]
+        return label
+    label = property(get_label)
+
     def __init__(self, filepath=None, parent=None):
 
-        super(QWidget, self).__init__(parent)
+        super(NetlistWidget, self).__init__(parent)
 
         self.initSig = NoneSig()
         self.statusSig = BoolSig()
@@ -47,52 +56,27 @@ class NetlistWidget(QWidget):
 
     def initUI(self):
 
-        # --------------------
-
-        font = QFont()
-        font.setBold(True)
-
-        labelWidget = DescriptionWidget('Netlist',
-                                        '',
-                                        '')
-
-        desc = 'Key for reference node (e.g. electrical grounds and mechanical \
-reference points).'
-        datumWidget = DescriptionWidget('datum',
-                                        datum,
-                                        desc)
-        status = QLabel()
-        status.setFont(font)
-
-        self.title = QGridLayout()
-        self.title.addWidget(labelWidget, 0, 0)
-        self.title.addWidget(status, 0, 1)
-        self.title.addWidget(datumWidget, 0, 3)
-
-        self.set_status(False)
-
         # ---------------------------------------------------------------------
         # Create Empty (nlines)x5 Table
-        self.table = QTableWidget(self)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setColumnCount(5)
-        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tableWidget = QTableWidget()
+        self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tableWidget.setColumnCount(5)
+        self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-        self.labels = ('Dictionary', 'Component', 'Label',
-                       'Nodes', 'Arguments')
+        self.tableLabels = ('Dictionary', 'Component', 'Label',
+                            'Nodes', 'Arguments')
 
         # Add Header
         horHeaders = []
-        for n, key in enumerate(self.labels):
+        for n, key in enumerate(self.tableLabels):
             horHeaders.append(key)
-        self.table.setHorizontalHeaderLabels(horHeaders)
+        self.tableWidget.setHorizontalHeaderLabels(horHeaders)
 
+        self.tableWidget.setFixedWidth(520)
         # ---------------------------------------------------------------------
-        # Define Netlist Actions
+        # Define Netlist File Actions
 
-        self.toolbarIO = QHBoxLayout()
-
-        self.toolbarIO.addStretch()
+        buttonsLayout = QHBoxLayout()
 
         # New Action
         new_icon = QIcon(os.path.join(iconspath, 'new.png'))
@@ -104,7 +88,7 @@ reference points).'
         newButton = QPushButton(new_icon, '')
         newButton.setToolTip('Create a new netlist')
         newButton.clicked.connect(self._new)
-        self.toolbarIO.addWidget(newButton)
+        buttonsLayout.addWidget(newButton)
 
         # Open Action
         open_icon = QIcon(os.path.join(iconspath, 'open.png'))
@@ -116,7 +100,7 @@ reference points).'
         openButton = QPushButton(open_icon, '')
         openButton.setToolTip('Open an existing netlist')
         openButton.clicked.connect(self._open)
-        self.toolbarIO.addWidget(openButton)
+        buttonsLayout.addWidget(openButton)
 
         # Save Action
         save_icon = QIcon(os.path.join(iconspath, 'save.png'))
@@ -128,7 +112,7 @@ reference points).'
         saveButton = QPushButton(save_icon, '')
         saveButton.setToolTip('Save the netlist')
         saveButton.clicked.connect(self._save)
-        self.toolbarIO.addWidget(saveButton)
+        buttonsLayout.addWidget(saveButton)
 
         # Saveas Action
         saveas_icon = QIcon(os.path.join(iconspath, 'saveas.png'))
@@ -140,13 +124,12 @@ reference points).'
         saveasButton = QPushButton(saveas_icon, '')
         saveasButton.setToolTip('Save the netlist as a new netlist')
         saveasButton.clicked.connect(self._saveas)
-        self.toolbarIO.addWidget(saveasButton)
+        buttonsLayout.addWidget(saveasButton)
 
-        self.toolbarIO.addStretch()
+        # ---------------------------------------------------------------------
+        # Define Netlist Line Actions
 
-        self.toolbarEdit = QHBoxLayout()
-
-        self.toolbarEdit.addStretch()
+        actionsLayout = QHBoxLayout()
 
         # Editline Action
         edit_icon = QIcon(os.path.join(iconspath, 'edit.png'))
@@ -158,7 +141,7 @@ reference points).'
         editButton = QPushButton(edit_icon, '')
         editButton.setToolTip('Edit an existing line of the netlist')
         editButton.clicked.connect(self._edit_line)
-        self.toolbarEdit.addWidget(editButton)
+        actionsLayout.addWidget(editButton)
 
         # addline Action
         add_icon = QIcon(os.path.join(iconspath, 'add.png'))
@@ -170,7 +153,7 @@ reference points).'
         addlineButton = QPushButton(add_icon, '')
         addlineButton.setToolTip('Add a new line to the netlist')
         addlineButton.clicked.connect(self._new_line)
-        self.toolbarEdit.addWidget(addlineButton)
+        actionsLayout.addWidget(addlineButton)
 
         # delline Action
         del_icon = QIcon(os.path.join(iconspath, 'del.png'))
@@ -182,50 +165,43 @@ reference points).'
         dellineButton = QPushButton(del_icon, '')
         dellineButton.setToolTip('Delete a line from the netlist')
         dellineButton.clicked.connect(self._del_line)
-        self.toolbarEdit.addWidget(dellineButton)
+        actionsLayout.addWidget(dellineButton)
 
-        self.toolbarEdit.addSpacing(1)
+        actionsLayout.addStretch()
 
-        # PlotGraph Action
-        graph_icon = QIcon(os.path.join(iconspath, 'graph.png'))
-        self.plotgraphAction = QAction(graph_icon,
-                                       "&Plot system's graph", self)
-        self.plotgraphAction.setShortcut('Ctrl+G')
-        self.plotgraphAction.setStatusTip("Plot the system's graph")
-        self.plotgraphAction.triggered.connect(self._plot_graph)
-        plotgraphButton = QPushButton(graph_icon, '')
-        plotgraphButton.setToolTip("Plot the system's graph")
-        plotgraphButton.clicked.connect(self._plot_graph)
-        self.toolbarEdit.addWidget(plotgraphButton)
+        # ---------------------------------------------------------------------
+        # Datum widget
+        desc = 'Key for reference node (e.g. electrical grounds and mechanical reference points).'
+        datumWidget = DescriptionWidget('datum',
+                                        datum,
+                                        desc)
+        actionsLayout.addWidget(datumWidget)
 
-        # PlotGraph MSA
-        self.plotSTAction = QAction(graph_icon,
-                                     '&Plot realizability spanning tree', self)
-        self.plotSTAction.setShortcut('Ctrl+T')
-        self.plotSTAction.setStatusTip('Plot the realizability spanning tree')
-        self.plotSTAction.triggered.connect(self._plot_spantree)
-        plotSTButton = QPushButton(graph_icon, '')
-        plotSTButton.clicked.connect(self._plot_spantree)
-        plotSTButton.setToolTip('Plot the realizability spanning tree')
-        self.toolbarEdit.addWidget(plotSTButton)
+        # ---------------------------------------------------------------------
+        # title widget
 
-        self.toolbarEdit.addStretch()
+        title = 'NETLIST'
+        self.labelWidget = QLabel()
+        status_labels = {True: 'Saved',
+                         False: 'Not Saved'}
+        self.titleWidget = TitleWidget(title=title,
+                                       labelWidget=self.labelWidget,
+                                       status_labels=status_labels,
+                                       buttonsLayout=buttonsLayout)
+
+        self.tableWidget.setMaximumWidth(self.titleWidget.width())
 
         # ---------------------------------------------------------------------
         # set Layout
-        vbox = QVBoxLayout()
-
-        tempWidget = QWidget()
-        tempWidget.setLayout(self.toolbarIO)
-        self.title.addWidget(tempWidget, 0, 2)
-        vbox.addLayout(self.title)
-        vbox.addLayout(self.toolbarEdit)
-        vbox.addWidget(self.table)
-
+        vbox = QVBoxLayout(self)
+        vbox.addWidget(self.titleWidget)
+        vbox.addLayout(actionsLayout)
+        vbox.addWidget(self.tableWidget)
         self.setLayout(vbox)
+        self.setFixedWidth(544)
 
     def initMessage(self):
-        msgBox = QMessageBox()
+        msgBox = QMessageBox(self)
         msgBox.setText('Netlist file selection')
         msgBox.addButton(QPushButton('New'), QMessageBox.YesRole)
         msgBox.addButton(QPushButton('Open'), QMessageBox.NoRole)
@@ -236,17 +212,16 @@ reference points).'
             assert init == 1
             self._open()
 
-
     def update(self):
 
         # read data
         data = dict()
 
-        for label in self.labels:
+        for label in self.tableLabels:
             data.update({label: list()})
 
-        for netline in self.Netlist:
-            for label in self.labels:
+        for netline in self.netlist:
+            for label in self.tableLabels:
                 el = netline[label.lower()]
                 if isinstance(el, dict):
                     string = ''
@@ -260,73 +235,54 @@ reference points).'
                     string = string[:-1]
                 else:
                     string = str(el)
+
                 data[label].append(string)
 
         # Enter data onto Table
-        self.table.setRowCount(self.Netlist.nlines())
-        for n, key in enumerate(self.labels):
+        self.tableWidget.setRowCount(self.netlist.nlines())
+        for n, key in enumerate(self.tableLabels):
             for m, item in enumerate(data[key]):
                 newitem = QTableWidgetItem(item)
-                self.table.setItem(m, n, newitem)
-        self.table.setMaximumWidth(500)
-#        # Adjust size of Table
-#        self.table.resizeColumnsToContents()
-#        self.table.resizeRowsToContents()
+                self.tableWidget.setItem(m, n, newitem)
 
-        self.set_status(False)
+        self._update_path()
+        self._change_status(False)
 
-        # update Graph
-        self._update_graph()
+    def _change_status(self, s=False):
+        if not self.status == s:
+            self.titleWidget._change_status(s)
+            self.statusSig.sig.emit(s)
 
-    def set_status(self, s=False):
-
-        if s:
-            text = 'Saved'
-            color = 'green'
-
-        else:
-            text = 'Not Saved'
-            color = 'red'
-        self.statusSig.sig.emit(s)
-
-        item = self.title.itemAtPosition(0, 1)
-        status = item.widget()
-        status.setStyleSheet("QLabel { color: %s}" % color)
-        status.setText(text)
-
-    def _update_graph(self):
-        self.Netlist.graph = self.Netlist.to_graph()
+    def _update_path(self):
+        label = self.netlist.filename
+        self.titleWidget.labelWidget.setToolTip(self.netlist.path)
+        self.titleWidget._change_label(label)
 
     def _read(self):
 
         if not os.path.exists(self.path):
-            self.Netlist = Netlist(self.path)
+            self.netlist = Netlist(self.path)
 
         if not hasattr(self, 'Netlist'):
-            self.Netlist = Netlist(self.path)
+            self.netlist = Netlist(self.path)
 
         else:
-            self.Netlist.path = self.path
-            for n in range(self.Netlist.nlines()):
-                self.Netlist.delline(0)
-            self.Netlist.read()
-
-        item = self.title.itemAtPosition(0, 0)
-        w = item.widget()
-        w._update('Netlist',
-                  self.Netlist.filename,
-                  self.Netlist.path)
+            self.netlist.path = self.path
+            for n in range(self.netlist.nlines()):
+                self.netlist.delline(0)
+            self.netlist.read()
 
         self.update()
 
-        self.set_status(True)
+        self._change_status(True)
+        self.initSig.sig.emit()
 
     def _new(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         dialog = QFileDialog()
         try:
-            filename = os.path.join(self.Netlist.path)
+            filename = os.path.join(self.netlist.path)
         except AttributeError:
             filename = os.path.join(os.getcwd(), 'netlist.net')
         dialog.selectFile(filename)
@@ -347,7 +303,7 @@ reference points).'
         options |= QFileDialog.DontUseNativeDialog
         dialog = QFileDialog()
         try:
-            filename = os.path.join(self.Netlist.path)
+            filename = os.path.join(self.netlist.path)
         except AttributeError:
             filename = os.path.join(os.getcwd(), 'netlist.net')
         dialog.selectFile(filename)
@@ -366,7 +322,7 @@ reference points).'
         options |= QFileDialog.DontUseNativeDialog
         dialog = QFileDialog()
         try:
-            filename = os.path.join(self.Netlist.path)
+            filename = os.path.join(self.netlist.path)
         except AttributeError:
             filename = os.path.join(os.getcwd(), 'netlist.net')
         dialog.selectFile(filename)
@@ -379,48 +335,38 @@ reference points).'
         if not fname == '':
             if not fname[-4:] == '.net':
                 fname += '.net'
-            self.Netlist.write(fname)
+            self.netlist.write(fname)
             self.path = fname
             self._read()
 
     def _save(self):
-        self.Netlist.write()
-        self.set_status(True)
-
-    def _plot_graph(self):
-        self.Netlist.graph.plot()
-
-    def _plot_spantree(self):
-        if not hasattr(self.Netlist.graph, 'analysis'):
-            self.Netlist.graph._build_analysis()
-        perform_analysis(self.Netlist, self)
-        self.Netlist.graph.analysis.plot()
+        self.netlist.write()
+        self._change_status(True)
 
     def _new_line(self):
         netline, res = EditDialog.getNetline(self)
         if res:
-            self.Netlist.add_line(netline)
+            self.netlist.add_line(netline)
             self.update()
 
     def _del_line(self):
-        for i in range(self.table.rowCount()):
-            r = range(self.table.columnCount())
-            if any([self.table.item(i, j).isSelected() for j in r]):
+        for i in range(self.tableWidget.rowCount()):
+            r = range(self.tableWidget.columnCount())
+            if any([self.tableWidget.item(i, j).isSelected() for j in r]):
                 break
-        self.Netlist.delline(i)
+        self.netlist.delline(i)
         self.update()
 
     def _edit_line(self):
 
-        for i in range(self.table.rowCount()):
-            r = range(self.table.columnCount())
-            if any([self.table.item(i, j).isSelected() for j in r]):
+        for i in range(self.tableWidget.rowCount()):
+            r = range(self.tableWidget.columnCount())
+            if any([self.tableWidget.item(i, j).isSelected() for j in r]):
                 break
-        line = self.Netlist[i]
-        e = EditDialog
+        line = self.netlist[i]
         netline, res = EditDialog.getNetline(self, line)
         if res:
-            self.Netlist.setline(i, netline)
+            self.netlist.setline(i, netline)
             self.update()
 
 ###############################################################################

@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QHBoxLayout, QVBoxLayout,
 from PyQt5.QtCore import Qt
 
 from pyphs import signalgenerator
-from ..misc.tools import Element
+from ..misc.element import ElementWidget
 
 # --------------------------------------------------------------------------- #
 

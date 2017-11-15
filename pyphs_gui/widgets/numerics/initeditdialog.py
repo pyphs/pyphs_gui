@@ -19,7 +19,7 @@ from PyQt5.QtCore import Qt
 
 from pyphs.misc.tools import geteval
 
-from ..misc.tools import Element
+from ..misc import ElementWidget
 
 ###############################################################################
 
@@ -76,10 +76,10 @@ class InitDialog(QDialog):
                            'type': 'float'
                            }
 
-                self.grids[i].addWidget(Element(**content), *pos)
+                self.grids[i].addWidget(ElementWidget(**content), *pos)
                 w = self.grids[i].itemAtPosition(*pos).widget()
                 onchange = self.build_onchange(i, j)
-                w.modifSig.sig.connect(onchange)
+                w.modifiedSig.sig.connect(onchange)
 
                 h.addLayout(self.grids[i])
 

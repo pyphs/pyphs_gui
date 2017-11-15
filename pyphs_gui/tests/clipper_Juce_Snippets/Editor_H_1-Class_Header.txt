@@ -1,0 +1,4 @@
+class ClipperAudioProcessorEditor :
+                                public AudioProcessorEditor,
+                                private Slider::Listener,
+                                private Timer

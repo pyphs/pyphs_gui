@@ -9,87 +9,76 @@ Created on Fri Nov 10 16:05:03 2017
 
 from __future__ import absolute_import, division, print_function
 
-import sys
 import os
-from PyQt5.QtWidgets import (QWidget, QAction, QLabel, QVBoxLayout,
-                             QApplication, QFileDialog, QHBoxLayout,
-                             QPushButton, QMessageBox, QLineEdit,
-                             QTableWidget, QTableWidgetItem, QInputDialog,
-                             QGridLayout, QAbstractItemView)
-from PyQt5.QtGui import QFont, QIcon
-
-from pyphs import Core, Graph, datum, Method
-
-from pyphs.misc.latex.latexcore import LatexCore
+from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QFileDialog,
+                             QHBoxLayout, QPushButton, QLineEdit, QMessageBox)
 
 from ..misc.tools import DescriptionWidget
-from ..misc.latex import LatexLabel
-
-from ..misc.tools import Element, NoneSig, BoolSig
+from ..misc.signals import BoolSig
 
 from pyphs import netlist2tex, core2tex, graphplot2tex, texdocument
-from pyphs import Core
+from ..misc import TitleWidget, ParametersWidget
 
+from PyQt5.QtGui import QIcon
 from .. import iconspath
 
 
 class MethodWidget(QWidget):
 
-    _status = False
-    _label = None
-
-    config = {'grad': 'discret',  # In {‘discret’, ‘theta’, ‘trapez’}
-              'theta': 0.,        # Theta-scheme for the structure
-              'split': True,     # split implicit from explicit part
-              }
-
-    def get_core(self):
-        return self.coreWidget.core
-    core = property(get_core)
+    def get_net(self):
+        return self.coreWidget.net
+    net = property(get_net)
 
     def get_folder(self):
         return self.coreWidget.folder
     folder = property(get_folder)
 
+    def get_label(self):
+        return self.titleWidget.label
+    label = property(get_label)
+
+    def get_core(self):
+        return self.coreWidget.core
+    core = property(get_core)
+
+    def get_status(self):
+        return self.titleWidget.status
+    status = property(get_status)
+
     def __init__(self, coreWidget, parent=None):
 
         super(MethodWidget, self).__init__(parent)
 
-        self.statusSig = BoolSig()
-        self.modifSig = NoneSig()
+        self.parameters = {'grad': 'discret',  # In {‘discret’, ‘theta’, ‘trapez’}
+                           'theta': 0.,        # Theta-scheme for the structure
+                           'split': True,     # split implicit from explicit part
+                           }
 
         self.coreWidget = coreWidget
-
-        self.method = self.core.to_method(self.config)
-
-        self.modifSig.sig.emit()
-
-        self._label = self.coreWidget.core.label
 
         self.initUI()
 
     def initUI(self):
 
-        vbox = QVBoxLayout()
+        self.method = self.coreWidget.core.to_method()
 
-        self.status = QLabel()
+        self.statusSig = BoolSig()
 
-        font = QFont()
-        font.setBold(True)
-        self.status.setFont(font)
-        self.set_status(False)
+        dimsLayout = QHBoxLayout()
+        dimsLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.label = QLineEdit(self._label)
-        self.label.textChanged[str].connect(self.update_label)
+        self.expliciteWidget = DescriptionWidget('Explicit', '0', 'Dimension of the explict update')
+        self.impliciteWidget = DescriptionWidget('Implicit', '0', 'Dimension of the implict update')
 
-        title = QHBoxLayout()
-        core_title = QLabel('Method')
-        core_title.setFont(font)
+        dimsLayout.addWidget(self.expliciteWidget)
+        dimsLayout.addWidget(self.impliciteWidget)
+        dimsLayout.addStretch()
 
-        title.addWidget(core_title)
-        title.addWidget(self.label)
-        title.addStretch()
-        title.addWidget(self.status)
+        # ---------------------------------------------------------------------
+        # Define Method Actions
+
+        buttonsLayout = QHBoxLayout()
+        buttonsLayout.setContentsMargins(0, 0, 0, 0)
 
         # Build Action
         build_icon = QIcon(os.path.join(iconspath, 'work.png'))
@@ -101,7 +90,7 @@ class MethodWidget(QWidget):
         buildbutton = QPushButton(build_icon, '')
         buildbutton.setToolTip('Build numerical method equations')
         buildbutton.clicked.connect(self._build)
-        title.addWidget(buildbutton)
+        buttonsLayout.addWidget(buildbutton)
 
         # Latex export Action
         export_icon = QIcon(os.path.join(iconspath, 'latex.png'))
@@ -113,83 +102,95 @@ class MethodWidget(QWidget):
         exportbutton = QPushButton(export_icon, '')
         exportbutton.setToolTip('Export a LaTeX document')
         exportbutton.clicked.connect(self._writelatex)
-        title.addWidget(exportbutton)
+        buttonsLayout.addWidget(exportbutton)
 
-        vbox.addLayout(title)
-        self.positions = {'grad': (0, 0), 'theta': (0, 1),
-                          'split': (0, 2)
-                          }
+        # ---------------------------------------------------------------------
+        # title widget
 
-        self.content = {'grad': {'desc': 'Discrete Evaluation of Hamiltonian gradient.',
-                                 'label': 'Gradient',
-                                 'value': self.config['grad'],
-                                 'type': 'sel',
-                                 'choices': ['discret', 'theta', 'trapez']
-                                 },
-                        'theta': {'desc': 'Theta scheme (0=explicit, 0.5=midpoint, 1=implicit).',
-                                  'label': 'Theta',
-                                  'value': self.config['theta'],
-                                  'type': 'float',
-                                  },
-                        'split': {'desc': 'Pre-solve the affine part (matrix inversion).',
-                                  'label': 'Pre-solve',
-                                  'value': self.config['split'],
-                                  'type': 'bool',
-                                  },
-                        }
+        title = 'METHOD'
 
-        self.grid = QGridLayout()
+        self.labelWidget = QLineEdit(self.core.label)
 
-        for k in self.content.keys():
-            self.grid.addWidget(Element(**self.content[k]), *self.positions[k])
-            item = self.grid.itemAtPosition(*self.positions[k])
-            widget = item.widget()
-            widget.modifSig.sig.connect(self.set_status)
+        status_labels = {True: 'OK',
+                         False: 'Not OK'}
 
-        vbox.addLayout(self.grid)
+        self.titleWidget = TitleWidget(title=title,
+                                       labelWidget=self.labelWidget,
+                                       status_labels=status_labels,
+                                       buttonsLayout=buttonsLayout)
 
+        # ---------------------------------------------------------------------
+        # set parameters
+
+        content = {}
+
+        content['grad'] = {'desc': 'Discrete Evaluation of Hamiltonian gradient.',
+                           'label': 'Gradient',
+                           'value': self.parameters['grad'],
+                           'type': 'sel',
+                           'choices': ['discret', 'theta', 'trapez']
+                           }
+        content['theta'] = {'desc': 'Theta scheme (0=explicit, 0.5=midpoint, 1=implicit).',
+                            'label': 'Theta',
+                            'value': self.parameters['theta'],
+                            'type': 'float',
+                            }
+        content['split'] = {'desc': 'Pre-solve the affine part (matrix inversion).',
+                            'label': 'Pre-solve',
+                            'value': self.parameters['split'],
+                            'type': 'bool',
+                            }
+
+        tooltip = 'Method parameters'
+
+        self.parametersWidget = ParametersWidget('', content, tooltip)
+
+        # ---------------------------------------------------------------------
+        # set Layout
+        vbox = QVBoxLayout(self)
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.addWidget(self.titleWidget)
+        vbox.addLayout(dimsLayout)
+        vbox.addWidget(self.parametersWidget)
         self.setLayout(vbox)
-        self.resize(self.sizeHint())
+        self.setContentsMargins(0, 0, 0, 0)
 
-        self.coreWidget.statusSig.sig.connect(self.coreStatusChanged)
+        # ---------------------------------------------------------------------
+        # signals
+        self.coreWidget.statusSig.sig.connect(self._status_changed)
+        self.parametersWidget.modifiedSig.sig.connect(self._update_parameters)
+        self.titleWidget.labelSignal.sig.connect(self._update_label)
 
-    def coreStatusChanged(self, s):
+    def _update_parameters(self):
+        if not self.parameters == self.parametersWidget.parameters:
+            self.parameters.update(self.parametersWidget.parameters)
+            self._change_status(False)
+
+    def _update(self):
+        self.expliciteWidget.desc.setText(str(self.method.dims.l()))
+        self.impliciteWidget.desc.setText(str(self.method.dims.nl()))
+
+    def _status_changed(self, s=False):
         if not s:
-            self.set_status()
-        self.update_label(self.core.label)
+            self._change_status(s)
 
-    def update_config(self):
-        for k in self.content.keys():
-            item = self.grid.itemAtPosition(*self.positions[k])
-            widget = item.widget()
-            self.config[k] = widget.data['value']
+    def _change_status(self, s=False):
+            self.titleWidget._change_status(s)
+            self.statusSig.sig.emit(s)
 
-    def _build(self):
+    def _update_label(self, label):
+        if not self.label == label:
+            self.titleWidget._change_label(label)
 
-        try:
-            if not self.coreWidget.status.text() == 'Build OK':
-                self.coreWidget._build()
-            self.method = self.core.to_method(self.config)
-            self.update_label(self._label)
-            self.set_status(True)
-
-        except:
-            QMessageBox.question(self, 'Build issue',
-                                 'Can not build method {}'.format(self._label),
-                                 QMessageBox.Ok, QMessageBox.Ok)
-
-        self.modifSig.sig.emit()
-
-    def update_label(self, label):
-        self._label = label
-        self.label.setText(label)
-        self.method.label = label
+    def _change_label(self, label):
+        self.titleWidget._change_label(label)
+        self._update_label(label)
 
     def _writelatex(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         dialog = QFileDialog()
-        filename = os.path.join(self.folder, self.core.label + '.tex')
+        filename = os.path.join(self.folder, self.label + '.tex')
         dialog.selectFile(filename)
         fileName, _ = dialog.getSaveFileName(self,
                                              "Save LaTeX file as...",
@@ -198,24 +199,28 @@ class MethodWidget(QWidget):
                                              "Latex Files (*.tex)",
                                              options=options)
         if not fileName == '':
-            content = netlist2tex(self.netlistWidget.Netlist)
-            content += graphplot2tex(self.netlistWidget.Netlist.graph)
+            content = netlist2tex(self.coreWidget.graphWidget.netlistWidget.netlist)
+            content += graphplot2tex(self.coreWidget.graphWidget.graph)
             content += core2tex(self.core)
             title = self.core.label
             texdocument(content, fileName, title)
 
-    def set_status(self, status=False):
+    def _build(self):
+        if not self.coreWidget.status:
+            self.coreWidget._build()
 
-        if status:
-            text = 'Build OK'
-            color = 'green'
-        else:
-            text = 'Build Needed'
-            color = 'red'
+        if self.coreWidget.status:
+#            try:
+                self.method = self.core.to_method(self.parameters)
 
-        self.statusSig.sig.emit(status)
-        self.status.setStyleSheet("QLabel { color: %s}" % color)
-        self.status.setText(text)
+                self.method.label = self.label
 
+                self._update()
+
+                self._change_status(True)
+#            except:
+#                QMessageBox.question(self, 'Build issue',
+#                                     'Can not build method {}'.format(self.label),
+#                                     QMessageBox.Ok, QMessageBox.Ok)
 
 ###############################################################################

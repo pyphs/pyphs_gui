@@ -18,7 +18,8 @@ from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout,
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
-from ..misc.tools import Element, NoneSig
+from ..misc.element import ElementWidget
+from ..misc.signals import NoneSig
 from .editsignal import SignalEdit
 
 from pyphs.misc.tools import geteval

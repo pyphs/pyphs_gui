@@ -1,0 +1,10 @@
+    
+    //=========================================================================
+    // Define controled parameters
+    
+    AudioParameterFloat* inputGain1;
+    float previousInputGain1;
+    
+    AudioParameterFloat* outputGain1;
+    float previousOutputGain1;
+    
