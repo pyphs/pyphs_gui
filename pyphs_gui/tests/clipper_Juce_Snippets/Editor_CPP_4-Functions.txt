@@ -1,0 +1,47 @@
+//==============================================================================
+// Sliders listener
+void ClipperAudioProcessorEditor::sliderValueChanged (Slider* slider)
+{    if (AudioParameterFloat* param = getParameterForSlider (slider))
+        *param = (float) slider->getValue();
+}
+
+//==============================================================================
+// Sliders Drag start
+void ClipperAudioProcessorEditor::sliderDragStarted (Slider* slider)
+{
+    if (AudioParameterFloat* param = getParameterForSlider (slider))
+        param->beginChangeGesture();
+}
+    
+//==============================================================================
+// Sliders Drag end
+void ClipperAudioProcessorEditor::sliderDragEnded (Slider* slider)
+{
+    if (AudioParameterFloat* param = getParameterForSlider (slider))
+        param->endChangeGesture();
+}
+    
+//==============================================================================
+// Timer Callback 
+void ClipperAudioProcessorEditor::
+timerCallback()
+{
+    const OwnedArray<AudioProcessorParameter>& params = getAudioProcessor()->getParameters();
+    for (int i = 0; i < params.size(); ++i)
+    {
+        if (const AudioParameterFloat* param = dynamic_cast<AudioParameterFloat*> (params[i]))
+        {
+            if (i < paramSliders.size())
+                paramSliders[i]->setValue (*param);
+        }
+    }
+}
+
+//==============================================================================
+// Get Parameter For Slider 
+AudioParameterFloat* ClipperAudioProcessorEditor::
+getParameterForSlider (Slider* slider)
+{
+    const OwnedArray<AudioProcessorParameter>& params = getAudioProcessor()->getParameters();
+    return dynamic_cast<AudioParameterFloat*> (params[paramSliders.indexOf (slider)]);
+}

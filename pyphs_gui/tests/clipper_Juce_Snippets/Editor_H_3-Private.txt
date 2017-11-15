@@ -1,0 +1,18 @@
+    
+    //==============================================================================
+    // UI Slider callback
+    void timerCallback() override;
+    
+    //==============================================================================
+    // Shortcut for AudioParameter from slider change
+    AudioParameterFloat* getParameterForSlider (Slider* slider);
+    
+    //==============================================================================
+    // Dummy Label
+    Label noParameterLabel;
+    
+    //==============================================================================
+    // Arrays for Sliders and Labels
+    OwnedArray<Slider> paramSliders;
+    OwnedArray<Label> paramLabels;
+    

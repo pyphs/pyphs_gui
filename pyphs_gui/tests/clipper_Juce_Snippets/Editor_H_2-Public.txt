@@ -1,0 +1,20 @@
+    
+    //==============================================================================
+    // Slider Listener
+    void sliderValueChanged (Slider* slider) override;
+    
+    //==============================================================================
+    // Slider Drag start
+    void sliderDragStarted (Slider* slider) override;
+    
+    //==============================================================================
+    // Slider Drag end
+    void sliderDragEnded (Slider* slider) override;
+    
+    enum
+    {
+        kParamControlHeight = 40,
+        kParamLabelWidth = 80,
+        kParamSliderWidth = 300
+    };
+    

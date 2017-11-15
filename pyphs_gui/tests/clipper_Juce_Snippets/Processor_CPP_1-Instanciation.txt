@@ -1,0 +1,34 @@
+#ifndef JucePlugin_PreferredChannelConfigurations
+     : AudioProcessor (BusesProperties()
+                     #if ! JucePlugin_IsMidiEffect
+                      #if ! JucePlugin_IsSynth
+                       .withInput  ("Input",  AudioChannelSet::stereo(), true)
+                      #endif
+                       .withOutput ("Output", AudioChannelSet::stereo(), true)
+                     #endif
+                       ),
+#endif
+clipper()
+{
+    //=========================================================================
+    // Define controled parameters
+        
+    
+    addParameter (inputGain1 = new AudioParameterFloat (
+                        "inputGain1",    // parameter ID
+                        "Inputgain1",    // parameter name
+                        -2.0,      // mininum value
+                        2.0,      // maximum value
+                        0.0      // default value
+                     )
+                 );    
+    
+    addParameter (outputGain1 = new AudioParameterFloat (
+                        "outputGain1",    // parameter ID
+                        "Outputgain1",    // parameter name
+                        -2.0,      // mininum value
+                        2.0,      // maximum value
+                        0.0      // default value
+                     )
+                 );
+}
