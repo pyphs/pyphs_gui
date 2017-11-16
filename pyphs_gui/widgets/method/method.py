@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QFileDialog,
                              QHBoxLayout, QPushButton, QLineEdit, QMessageBox)
 
 from ..misc.tools import DescriptionWidget
-from ..misc.signals import BoolSig
+from ..misc.signals import BoolSig, NoneSig
 
 from pyphs import netlist2tex, core2tex, graphplot2tex, texdocument
 from ..misc import TitleWidget, ParametersWidget
@@ -63,6 +63,7 @@ class MethodWidget(QWidget):
         self.method = self.coreWidget.core.to_method()
 
         self.statusSig = BoolSig()
+        self.initSig= NoneSig()
 
         dimsLayout = QHBoxLayout()
         dimsLayout.setContentsMargins(0, 0, 0, 0)
@@ -160,6 +161,12 @@ class MethodWidget(QWidget):
         self.coreWidget.statusSig.sig.connect(self._status_changed)
         self.parametersWidget.modifiedSig.sig.connect(self._update_parameters)
         self.titleWidget.labelSignal.sig.connect(self._update_label)
+        self.coreWidget.initSig.sig.connect(self._netlist_init)
+
+    def _netlist_init(self):
+        label = self.coreWidget.label
+        self._update_label(label)
+        self.initSig.sig.emit()
 
     def _update_parameters(self):
         if not self.parameters == self.parametersWidget.parameters:

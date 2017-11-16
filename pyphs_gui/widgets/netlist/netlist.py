@@ -73,6 +73,8 @@ class NetlistWidget(QWidget):
         self.tableWidget.setHorizontalHeaderLabels(horHeaders)
 
         self.tableWidget.setFixedWidth(520)
+        self.tableWidget.setFixedHeight(150)
+
         # ---------------------------------------------------------------------
         # Define Netlist File Actions
 

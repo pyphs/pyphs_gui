@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QFileDialog,
 from pyphs import Core
 
 from ..misc.tools import DescriptionWidget
-from ..misc.signals import BoolSig
+from ..misc.signals import BoolSig, NoneSig
 
 from pyphs import netlist2tex, core2tex, graphplot2tex, texdocument
 from ..misc import TitleWidget, ParametersWidget
@@ -89,6 +89,7 @@ class CoreWidget(QWidget):
         self.core = Core(self.graphWidget.label)
 
         self.statusSig = BoolSig()
+        self.initSig= NoneSig()
 
         dimsLayout = QHBoxLayout()
         dimsLayout.setContentsMargins(0, 0, 0, 0)
@@ -180,6 +181,7 @@ class CoreWidget(QWidget):
 
         # ---------------------------------------------------------------------
         # signals
+        self.graphWidget.initSig.sig.connect(self._netlist_init)
         self.graphWidget.statusSig.sig.connect(self._status_changed)
         self.parametersWidget.modifiedSig.sig.connect(self._update_parameters)
         self.titleWidget.labelSignal.sig.connect(self._update_label)
@@ -201,6 +203,11 @@ class CoreWidget(QWidget):
     def _change_status(self, s=False):
             self.titleWidget._change_status(s)
             self.statusSig.sig.emit(s)
+
+    def _netlist_init(self):
+        label = self.graphWidget.label
+        self._update_label(label)
+        self.initSig.sig.emit()
 
     def _update_label(self, label):
         if not self.core.label == label:

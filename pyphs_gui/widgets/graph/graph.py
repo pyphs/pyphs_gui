@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 from PyQt5.QtWidgets import (QWidget, QAction, QLabel, QVBoxLayout,
-                             QHBoxLayout, QPushButton)
+                             QHBoxLayout, QPushButton, QGridLayout)
 
 from PyQt5.QtGui import QIcon
 
@@ -41,7 +41,7 @@ class GraphWidget(QWidget):
 
     def initUI(self):
 
-        self.graph = Graph(label=self.netlistWidget.label)
+        self.graph = Graph(label=self.label)
 
         dimsLayout = QHBoxLayout()
         dimsLayout.setContentsMargins(0, 0, 0, 0)
@@ -108,17 +108,19 @@ class GraphWidget(QWidget):
 
         # ---------------------------------------------------------------------
         # set Layout
-        vbox = QVBoxLayout(self)
-        vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.addWidget(self.titleWidget)
-        vbox.addLayout(dimsLayout)
-        self.setLayout(vbox)
+        grid = QGridLayout(self)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.addWidget(self.titleWidget, 0, 0)
+        dlw = QWidget()
+        dlw.setLayout(dimsLayout)
+        grid.addWidget(dlw, 1, 0)
+        self.setLayout(grid)
         self.setContentsMargins(0, 0, 0, 0)
 
         # ---------------------------------------------------------------------
         # signals
         self.netlistWidget.statusSig.sig.connect(self._status_changed)
-        self.netlistWidget.initSig.sig.connect(self._status_changed)
+        self.netlistWidget.initSig.sig.connect(self._netlist_init)
 
     def get_net(self):
         net = set(self.netlistWidget.netlist.netlist().splitlines())
@@ -126,18 +128,20 @@ class GraphWidget(QWidget):
     net = property(get_net)
 
     def get_folder(self):
-        return self.netlistWidget.netlist.folder
+        return self.netlistWidget.folder
     folder = property(get_folder)
 
     def get_label(self):
-        fn = self.netlistWidget.netlist.filename
-        label = fn[:fn.rfind('.')]
-        return label
+        return self.netlistWidget.label
     label = property(get_label)
 
     def _update(self):
         self.nodesWidget.desc.setText(str(self.graph.number_of_nodes()))
         self.edgesWidget.desc.setText(str(self.graph.number_of_edges()))
+
+    def _netlist_init(self):
+        self.graph.label = self.label
+        self.initSig.sig.emit()
 
     def _status_changed(self, s=False):
         if not s:

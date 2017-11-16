@@ -14,63 +14,69 @@ last edited: January 2015
 
 from __future__ import absolute_import, division, print_function
 
-from PyQt5.QtWidgets import (QAction, qApp, QMainWindow, QVBoxLayout,
+from PyQt5.QtWidgets import (QAction, QMainWindow, QVBoxLayout,
                              QHBoxLayout, QWidget)
 from PyQt5.QtGui import QIcon
 
 from ..netlist.netlist import NetlistWidget
 from ..core.core import CoreWidget
 from ..method.method import MethodWidget
+from ..graph.graph import GraphWidget
+from ..numerics.numerics import NumericWidget
 from ..simulation.simulation import SimulationWidget
-import os
 
-here = os.path.realpath(__file__)[:os.path.realpath(__file__).rfind(os.sep)]
+from .. import iconspath
+import os
 
 
 class MainWidget(QWidget):
+    def __init__(self, netpath):
+        QWidget.__init__(self)
 
-    def __init__(self, netpath=None, parent=None):
+        hbox = QHBoxLayout()
 
-        super(MainWidget, self).__init__(parent)
+        vboxL = QVBoxLayout()
 
-        self.netlist = NetlistWidget(netpath, parent=self)
+        self.netlist = NetlistWidget(netpath, self)
+        vboxL.addWidget(self.netlist)
 
-        self.initUI()
+        self.graph = GraphWidget(self.netlist, self)
+        vboxL.addWidget(self.graph)
 
-    def initUI(self):
-        try:
-            self.core.destroy()
-        except AttributeError:
-            pass
-        try:
-            self.method.destroy()
-        except AttributeError:
-            pass
-        try:
-            self.simu.destroy()
-        except AttributeError:
-            pass
+        self.core = CoreWidget(self.graph, self)
+        vboxL.addWidget(self.core)
 
-        self.core = CoreWidget(self.netlist)
+        vboxR = QVBoxLayout()
 
-        self.method = MethodWidget(self.core, self.iconspath)
+        self.method = MethodWidget(self.core, self)
+        vboxR.addWidget(self.method)
 
-        self.simu = SimulationWidget(self.method,
-                                     self.netlist.Netlist.folder)
+        self.numeric = NumericWidget(self.method, self)
+        vboxR.addWidget(self.numeric)
 
-        hbox1 = QHBoxLayout()
-        hbox1.addWidget(self.netlist)
-        hbox1.addWidget(self.core)
+        self.simulation = NumericWidget(self.numeric, self)
+        vboxR.addWidget(self.simulation)
 
-        hbox2 = QHBoxLayout()
-        hbox2.addWidget(self.method)
-        hbox2.addWidget(self.simu)
+#        spliter = QSplitter()
+#        wL = QWidget()
+#        wL.setLayout(vboxL)
+#        wR = QWidget()
+#        wR.setLayout(vboxL)
+#        spliter.addWidget(wL)
+#        spliter.addWidget(wR)
 
-        vbox = QVBoxLayout()
-        vbox.addLayout(hbox1)
-        vbox.addLayout(hbox2)
+        hbox.addLayout(vboxL)
+        hbox.addLayout(vboxR)
+#        vbox.addWidget(self.core)
+#
+#        self.method = MethodWidget(self.core, self)
+#        vbox.addWidget(self.method)
+#
+#        self.numeric = NumericWidget(self.method, self)
+#        vbox.addWidget(self.numeric)
 
-        self.setLayout(vbox)
+        self.setLayout(hbox)
+        self.resize(self.sizeHint())
 
 
 class PyphsGui(QMainWindow):
@@ -99,19 +105,18 @@ class PyphsGui(QMainWindow):
         # Define Main Actions
 
         # Exit Action
-        exitAction = QAction(QIcon(os.path.join(self.iconspath, 'exit.png')),
+        exitAction = QAction(QIcon(os.path.join(iconspath, 'exit.png')),
                              '&Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit PyPHS Editor')
         exitAction.triggered.connect(self.destroy)
 
         # Simulation Action
-        simuAction = QAction(QIcon(os.path.join(self.iconspath,
+        simuAction = QAction(QIcon(os.path.join(iconspath,
                                                 'simulation.png')),
                              '&Simulation tool', self)
         simuAction.setShortcut('Ctrl+Shift+S')
         simuAction.setStatusTip('Show simulation tool')
-        simuAction.triggered.connect(self.mainWidget.simu._build)
 
         #############################################################
         #############################################################
@@ -119,18 +124,18 @@ class PyphsGui(QMainWindow):
 
         # TOOLBAR
 
-        self.toolbar = self.addToolBar('Netlist')
-        self.toolbar.addAction(self.mainWidget.netlist.newAction)
-        self.toolbar.addAction(self.mainWidget.netlist.openAction)
-        self.toolbar.addAction(self.mainWidget.netlist.saveAction)
-        self.toolbar.addAction(self.mainWidget.netlist.saveasAction)
-        self.toolbar.addAction(self.mainWidget.netlist.addlineAction)
-        self.toolbar.addAction(self.mainWidget.netlist.dellineAction)
-        self.toolbar.addAction(self.mainWidget.netlist.editAction)
-        self.toolbar.addAction(self.mainWidget.netlist.plotgraphAction)
-        self.toolbar.addAction(self.mainWidget.netlist.plotMSAAction)
-        self.toolbar.addAction(simuAction)
-
+#        self.toolbar = self.addToolBar('PyPHS GUI')
+#        self.toolbar.addAction(self.mainWidget.netlist.newAction)
+#        self.toolbar.addAction(self.mainWidget.netlist.openAction)
+#        self.toolbar.addAction(self.mainWidget.netlist.saveAction)
+#        self.toolbar.addAction(self.mainWidget.netlist.saveasAction)
+#        self.toolbar.addAction(self.mainWidget.netlist.addlineAction)
+#        self.toolbar.addAction(self.mainWidget.netlist.dellineAction)
+#        self.toolbar.addAction(self.mainWidget.netlist.editAction)
+#        self.toolbar.addAction(self.mainWidget.graph.plotgraphAction)
+#        self.toolbar.addAction(self.mainWidget.graph.plotSTAction)
+#        self.toolbar.addAction(simuAction)
+#
         #############################################################
         #############################################################
         #############################################################
@@ -169,42 +174,16 @@ class PyphsGui(QMainWindow):
 
         # Plots menu
         plotsMenu = menubar.addMenu('&Plots')
-        plotsMenu.addAction(self.mainWidget.netlist.plotgraphAction)
-        plotsMenu.addAction(self.mainWidget.netlist.plotMSAAction)
+        plotsMenu.addAction(self.mainWidget.graph.plotgraphAction)
+        plotsMenu.addAction(self.mainWidget.graph.plotSTAction)
 
         simuMenu = menubar.addMenu('&Simulation')
         simuMenu.addAction(simuAction)
 
         #############################################################
 
-        self.setWindowTitle('PyPHS GUI')
-        self.setWindowIcon(QIcon(os.path.join(self.iconspath,
+        self.setWindowTitle('PyPHS')
+        self.setWindowIcon(QIcon(os.path.join(iconspath,
                                               'pyphs.png')))
+        self.setContentsMargins(0, 0, 0, 0)
         self.show()
-
-        #############################################################
-
-        self.mainWidget.netlist.modifSig.signal.connect(self.modified_netlist)
-        self.mainWidget.netlist.initSig.signal.connect(self.modified_netlist)
-        self.mainWidget.method.buildSig.signal.connect(self.update_core)
-        self.mainWidget.method.simuSig.signal.connect(self.update_signals)
-        self.mainWidget.simu.buildSig.signal.connect(self.update_method)
-
-    def update_core(self):
-        if not self.mainWidget.core.status.text() == 'Build OK':
-            self.mainWidget.core._build()
-        self.mainWidget.method.update_core(self.mainWidget.core._core)
-
-    def update_method(self):
-        if ((not self.mainWidget.method.status.text() == 'Build OK') or
-            self.mainWidget.simu.method is None):
-            self.mainWidget.method._build()
-
-    def update_signals(self):
-        if not hasattr(self.mainWidget.simu, 'signals'):
-            self.mainWidget.simu.update_method(self.mainWidget.method._method)
-            self.mainWidget.simu.init_signals()
-
-    def modified_netlist(self):
-        self.mainWidget.core.set_net()
-        self.mainWidget.method.set_status(False)
