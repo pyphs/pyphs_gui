@@ -69,7 +69,7 @@ class SignalEdit(QDialog):
 
         if (self.data.keys().isdisjoint({'f1'}) or
             self.data['f1'] is None):
-            self.data['f1'] = None
+            self.data['f1'] = 1000.
 
         if (self.data.keys().isdisjoint({'cycle_ratio'}) or
             self.data['cycle_ratio'] is None):
@@ -152,7 +152,7 @@ class SignalEdit(QDialog):
                                      'value': self.data['f1'],
                                      'type': 'float',
                                      },
-                              'cycle_ratio': {'desc': 'Final frequency (‘sweep’ mode) or add a second sin wave (‘sin’ mode).',
+                              'cycle_ratio': {'desc': 'Duration of signal activation w.r.t cycle duration.',
                                      'label': 'Cycle Ratio',
                                      'value': self.data['cycle_ratio'],
                                      'type': 'float',
@@ -182,7 +182,7 @@ class SignalEdit(QDialog):
         self.grid = QGridLayout()
 
         for k in self.content.keys():
-            self.grid.addWidget(Element(**self.content[k]), *self.positions[k])
+            self.grid.addWidget(ElementWidget(**self.content[k]), *self.positions[k])
 
         # Edit Widget
         button = QPushButton('plot')
@@ -218,6 +218,7 @@ class SignalEdit(QDialog):
         time = (self.data['tdeb'] +
                 self.data['tsig']*self.data['ncycles'] +
                 self.data['tend'])
+
         self.data['time'] = time
 
     def plot(self):

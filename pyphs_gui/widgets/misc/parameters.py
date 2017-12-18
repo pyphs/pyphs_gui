@@ -58,7 +58,7 @@ class ParametersWidget(QWidget):
             self.widgets.append(w)
 
         self.list = HListWidget(self.title, self.tooltip, self.widgets)
-        self.list.setFixedHeight(80)
+        self.list.setFixedHeight(70)
 
         # define layout
         hbox = QHBoxLayout()
@@ -66,7 +66,6 @@ class ParametersWidget(QWidget):
         hbox.addStretch()
         self.setLayout(hbox)
         self.setContentsMargins(0, 0, 0, 0)
-        self.setFixedWidth(500)
 
     def _modified(self, label):
         self.labelWidget.setText(label)

@@ -1,4 +1,0 @@
-electronics.source in ('#', 'n1'): type=voltage;
-electronics.inductor L ('n1', 'n2'): L=('L', 0.05);
-electronics.capacitor C ('n3', '#'): C=('C', 2e-06);
-electronics.resistor R ('n2', 'n3'): R=('R', 1000.0);

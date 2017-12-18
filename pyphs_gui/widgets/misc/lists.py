@@ -62,7 +62,6 @@ class VListWidget(QWidget):
         scroll = QScrollArea()
         scroll.setContentsMargins(0, 0, 0, 0)
         scroll.setWidget(widget)
-#        scroll.setFixedWidth(WIDTH)
         scroll.setWidgetResizable(True)
 
         vbox = QVBoxLayout()

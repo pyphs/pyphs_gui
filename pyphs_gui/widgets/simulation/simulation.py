@@ -11,7 +11,8 @@ from __future__ import absolute_import, division, print_function
 
 import os
 from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QDialog,
-                             QHBoxLayout, QPushButton, QLineEdit)
+                             QHBoxLayout, QPushButton, QLineEdit,
+                             QGridLayout)
 
 from ..misc.signals import BoolSig, NoneSig
 
@@ -66,12 +67,24 @@ class SimulationWidget(QWidget):
         return self.doneWidget.status
     done = property(get_done)
 
+    def get_fs(self):
+        return self.numericWidget.parameters['fs']
+    fs = property(get_fs)
+
+    def get_config(self):
+        config = {}
+        config['path'] = self.folder
+        config.update(self.parameters)
+        config.update(self.numericWidget.parameters)
+        return config
+    config = property(get_config)
+
     def __init__(self, numericWidget, parent=None):
 
         super(SimulationWidget, self).__init__(parent)
 
-        self.parameters = {'lang': 'c++',
-                           'T': 0.1
+        self.parameters = {'lang': 'python',
+                           'T': 1.,
                            }
 
         self.numericWidget = numericWidget
@@ -79,8 +92,6 @@ class SimulationWidget(QWidget):
         self.initUI()
 
     def initUI(self):
-
-        self.simulation = self.method.to_simulation()
 
         self.statusSig = BoolSig()
         self.initSig = NoneSig()
@@ -98,22 +109,22 @@ class SimulationWidget(QWidget):
         self.buildAction.setShortcut('Ctrl+B')
         self.buildAction.setStatusTip('Build numerical evaluation')
         self.buildAction.triggered.connect(self._build)
-        buildbutton = QPushButton(build_icon, '')
-        buildbutton.setToolTip('Build numerical evaluation')
-        buildbutton.clicked.connect(self._build)
-        buttonsLayout.addWidget(buildbutton)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton.setToolTip('Build numerical evaluation')
+        self.buildButton.clicked.connect(self._build)
+        buttonsLayout.addWidget(self.buildButton)
 
         # process Action
-        process_icon = QIcon(os.path.join(iconspath, 'latex.png'))
+        process_icon = QIcon(os.path.join(iconspath, 'process.png'))
         self.processAction = QAction(process_icon,
                                      '&Run the simulation', self)
         self.processAction.setShortcut('Ctrl+L')
         self.processAction.setStatusTip('Run the simulation')
         self.processAction.triggered.connect(self._build)
-        processbutton = QPushButton(process_icon, '')
-        processbutton.setToolTip('Run the simulation')
-        processbutton.clicked.connect(self._process)
-        buttonsLayout.addWidget(processbutton)
+        self.processButton = QPushButton(process_icon, '')
+        self.processButton.setToolTip('Run the simulation')
+        self.processButton.clicked.connect(self._process)
+        buttonsLayout.addWidget(self.processButton)
 
         # plot Action
         plot_icon = QIcon(os.path.join(iconspath, 'plot.png'))
@@ -122,24 +133,22 @@ class SimulationWidget(QWidget):
         self.plotAction.setShortcut('Ctrl+L')
         self.plotAction.setStatusTip('Plot simulation results')
         self.plotAction.triggered.connect(self._build)
-        plotbutton = QPushButton(plot_icon, '')
-        plotbutton.setToolTip('Plot simulation results')
-        plotbutton.clicked.connect(self._plot)
-        buttonsLayout.addWidget(plotbutton)
+        self.plotButton = QPushButton(plot_icon, '')
+        self.plotButton.setToolTip('Plot simulation results')
+        self.plotButton.clicked.connect(self._plot)
+        buttonsLayout.addWidget(self.plotButton)
 
         # ---------------------------------------------------------------------
         # title widget
 
         title = 'SIMULATION'
 
-        self.labelWidget = QLineEdit(self.core.label)
+        self.labelWidget = QLineEdit(self.method.label)
 
         self.titleWidget = TitleWidget(title=title,
                                        labelWidget=self.labelWidget,
                                        status_labels=None,
                                        buttonsLayout=buttonsLayout)
-        self.statusWidget = self.titleWidget.statusWidget
-        self.titlWidget.removeWidget(self.titleWidget.statusWidget)
 
         # ---------------------------------------------------------------------
         # status widget
@@ -165,6 +174,11 @@ class SimulationWidget(QWidget):
         statusLayout.addWidget(self.doneWidget)
         statusLayout.addStretch()
 
+        self.signalsWidget = QWidget()
+        setattr(self.signalsWidget, 'gridLayout', QGridLayout())
+        self.signalsWidget.setLayout(self.signalsWidget.gridLayout)
+        self._init_signals()
+
         # ---------------------------------------------------------------------
         # set parameters
         content = {}
@@ -179,7 +193,7 @@ class SimulationWidget(QWidget):
                         'label': 'Duration',
                         'value': self.parameters['T'],
                         'type': 'float',
-                        },
+                        }
 
         tooltip = 'Simulation parameters'
 
@@ -187,30 +201,59 @@ class SimulationWidget(QWidget):
 
         # ---------------------------------------------------------------------
         # set Layout
-        vbox = QVBoxLayout(self)
-        vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.addWidget(self.titleWidget)
-        vbox.addLayout(statusLayout)
-        vbox.addWidget(self.parametersWidget)
-        self.setLayout(vbox)
-        self.setContentsMargins(0, 0, 0, 0)
-
+#        self.grid = QGridLayout(self)
+#        self.grid.setContentsMargins(0, 0, 0, 0)
+#        self.grid.addWidget(self.titleWidget, 0, 0)
+#        self.grid.addLayout(statusLayout, 1, 0)
+#        self.grid.addWidget(self.parametersWidget, 2, 0)
+#        self.setLayout(self.grid)
+#        self.setContentsMargins(0, 0, 0, 0)
+#
         # ---------------------------------------------------------------------
         # signals
-        self.coreWidget.statusSig.sig.connect(self._status_changed)
+        self.numericWidget.statusSig.sig.connect(self._status_changed)
         self.parametersWidget.modifiedSig.sig.connect(self._update_parameters)
         self.titleWidget.labelSignal.sig.connect(self._update_label)
         self.numericWidget.initSig.sig.connect(self._netlist_init)
+        self.numericWidget.methodWidget.statusSig.sig.connect(self._status_changed)
+        self.numericWidget.methodWidget.statusSig.sig.connect(self._init_signals)
+        self.numericWidget.inits.modifSig.sig.connect(self._init_signals)
+        self.numericWidget.io.modifSig.sig.connect(self._init_signals)
+
+    def _init_signals(self, a=None):
+
+        item = self.signalsWidget.gridLayout.itemAtPosition(0, 0)
+        if item is not None:
+            w = item.widget()
+            self.signalsWidget.gridLayout.removeWidget(w)
+            w.deleteLater()
+            w = None
+
+        uconst = list()
+        for c, b in zip(self.inits['u'], self.io['u']):
+            if b:
+                uconst.append(c)
+            else:
+                uconst.append(None)
+
+        pconst = list()
+        for c in self.inits['p']:
+            pconst.append(c)
+
+        w = Signals(self.method, self.fs, uconst, pconst)
+        w.changeSig.sig.connect(self._status_changed)
+        self.signalsWidget.gridLayout.addWidget(w, 0, 0)
 
     def _netlist_init(self):
         label = self.numericWidget.label
         self._update_label(label)
         self.initSig.sig.emit()
+        self._status_changed(False)
 
     def _update_parameters(self):
         if not self.parameters == self.parametersWidget.parameters:
             self.parameters.update(self.parametersWidget.parameters)
-            self._change_status(False)
+            self._status_changed(False)
 
     def _status_changed(self, s=False):
         if not s:
@@ -232,48 +275,35 @@ class SimulationWidget(QWidget):
         self._update_label(label)
 
     def _build(self):
+
         if not self.numericWidget.status:
             self.numericWidget.methodWidget._build()
 
-        if self.numericWidget.status:
+        config = self.config
+        print(config)
+        T = config.pop('T')
+        self.simu = self.method.to_simulation(config=config,
+                                              inits=self.inits)
+        item = self.signalsWidget.gridLayout.itemAtPosition(0, 0)
 
-            config = {}
-            config.update(self.parameters)
-            config.update(self.numericWidget.parameters)
-            self.simu = self.method.to_simulation(config=config,
-                                                  inits=self.inits)
-            u = self.signals.build_generator(self.simu.method.u,
-                                             config['fs'], config['T'])
-            self.simu.init(u=u(), nt=int(config['fs']*config['T']))
-            self.set_status(True)
-
-            self.method = self.core.to_method(self.parameters)
-            self.simulation.label = self.label
-            self._update()
-            self._change_status(True)
-
-    def init_signals(self):
-
-        self.signals = Signals(self.method, self.config['fs'], parent=self)
-
-        item = self.signalgrid.itemAtPosition(0, 0)
-        if item is not None:
-            widget = item.widget()
-            self.signalgrid.removeWidget(widget)
-            widget.destroy()
-        self.signalgrid.addWidget(self.signals, 0, 0)
+        w = item.widget()
+        u, p = w.build_generator(self.method.u, self.method.p,
+                                 config['fs'], T)
+        self.simu.init(u=u(), p=p(), nt=int(config['fs']*T))
+        self.simu.label = self.label
+        self._change_status(True)
 
     def _process(self):
         if not self.status:
             self._build()
-        self.simulation.process()
+        self.simu.process()
         self._change_done(True)
 
-    def plot(self):
+    def _plot(self):
         if self.done:
-            attrs, res = SimulationWidget.plotEdit(self.simu, self)
+            attrs, res = self.plotEdit(self.simu, self)
             if res:
-                self.simulation.data.plot(attrs)
+                self.simu.data.plot(attrs)
 
     @staticmethod
     def plotEdit(simu, parent=None):

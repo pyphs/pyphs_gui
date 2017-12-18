@@ -1,8 +1,0 @@
-{
-    // Update PHS sample-rate.
-    clipper.set_sampleRate(sampleRate);
-
-    // Init previous parameters    
-    previousInputGain1 = *inputGain1;    
-    previousOutputGain1 = *outputGain1;
-}

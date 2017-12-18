@@ -14,6 +14,8 @@ from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout,
 from PyQt5.QtGui import QFont
 from .editsignal import SignalEdit
 
+from ..misc.signals import NoneSig
+
 from pyphs import signalgenerator
 import numpy
 
@@ -22,16 +24,14 @@ import numpy
 
 class Signal(QWidget):
 
-    def __init__(self, label, parent=None, **data):
+    def __init__(self, label, parent=None, const=None, **data):
 
         self.data = dict()
-        self.data['which'] = 'zero'
         self.data['tsig'] = 1.
         self.data['ncycles'] = 1
         self.data['tdeb'] = 0.
         self.data['tend'] = 0.
         self.data['fs'] = int(1e3)
-        self.data['A'] = 1.
         self.data['A1'] = 0.
         self.data['f0'] = 100.
         self.data['f1'] = None
@@ -42,6 +42,13 @@ class Signal(QWidget):
         self.data['bkgrd_noise'] = 0.
         self.data['time'] = 1.
 
+        if const is None:
+            self.data['which'] = 'sin'
+            self.data['A'] = 1.
+        else:
+            self.data['which'] = 'const'
+            self.data['A'] = const
+
         super(Signal, self).__init__(parent)
 
         self.label = label
@@ -50,6 +57,8 @@ class Signal(QWidget):
         self.initUI()
 
     def initUI(self):
+
+        self.changeSig = NoneSig()
 
         # define hbox
         hbox = QHBoxLayout()
@@ -78,8 +87,9 @@ class Signal(QWidget):
         self.setLayout(hbox)
 
     def update_value(self):
-        value = 'type: {0}, duration: {1}'.format(self.data['which'],
-                                                  self.data['time'])
+        value = 'type: {0}, amplitude: {1}, duration: {2}'.format(self.data['which'],
+                                                                  self.data['A'],
+                                                                  self.data['time'])
         self.valueWidget.setText(value)
 
     def on_click(self):
@@ -87,6 +97,7 @@ class Signal(QWidget):
         if res:
             self.data = data
             self.update_value()
+            self.changeSig.sig.emit()
 
     @staticmethod
     def edit(label, parent=None, **data):
@@ -101,47 +112,68 @@ class Signal(QWidget):
 
 class Signals(QWidget):
 
-    def __init__(self, method, fs, parent=None):
+    def __init__(self, method, fs, uconst, pconst, parent=None):
 
         super(Signals, self).__init__(parent)
 
+        self.signals = {}
+
+        self.initUI(method, fs, uconst, pconst)
+
+    def initUI(self, method, fs, uconst, pconst):
+
+        self.changeSig = NoneSig()
+
         self.method = method
-
         self.fs = fs
-
-        self.initUI()
-
-    def initUI(self):
 
         # define hbox
         vbox = QVBoxLayout()
 
-        self.signals = {}
-        for u in self.method.u:
-            self.signals.update({u: Signal(str(u), parent=self, fs=self.fs)})
+        for u, const in zip(method.u, uconst):
+            self.signals[u] = Signal(str(u), const=const, fs=self.fs)
             vbox.addWidget(self.signals[u])
+            self.signals[u].changeSig.sig.connect(self.changeSig.sig.emit)
+
+        for p, const in zip(method.p, pconst):
+            self.signals[p] = Signal(str(p), const=const, fs=self.fs)
+            vbox.addWidget(self.signals[p])
+            self.signals[p].changeSig.sig.connect(self.changeSig.sig.emit)
 
         # set layout and show
         self.setLayout(vbox)
 
-    def build_generator(self, symbs, fs, time):
-        sigs = []
-        for u in symbs:
-            signal = self.signals[u]
-            delta = time - signal.data['time']
+    def build_generator(self, usymbs, psymbs, fs, time):
+        usigs = []
+        for u in usymbs:
+            usignal = self.signals[u]
+            delta = time - usignal.data['time']
             if delta > 0:
-                signal.data['tend'] += delta
-            signal.data['fs'] = fs
-            sigs.append(signalgenerator(**signal.data)())
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.plot(list(signalgenerator(**signal.data)()))
+                usignal.data['tend'] += delta
+            usignal.data['fs'] = fs
+            usigs.append(signalgenerator(**usignal.data)())
 
         def u():
             i = 0
             while i < time*fs:
-                si = [next(sig) for sig in sigs]
+                si = [next(usig) for usig in usigs]
                 i += 1
                 yield numpy.array(si)
 
-        return u
+        psigs = []
+        for p in psymbs:
+            psignal = self.signals[p]
+            delta = time - psignal.data['time']
+            if delta > 0:
+                psignal.data['tend'] += delta
+            psignal.data['fs'] = fs
+            psigs.append(signalgenerator(**psignal.data)())
+
+        def p():
+            i = 0
+            while i < time*fs:
+                si = [next(sig) for sig in psigs]
+                i += 1
+                yield numpy.array(si)
+
+        return u, p

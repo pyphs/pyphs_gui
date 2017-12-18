@@ -306,10 +306,10 @@ class ElementWidget(QWidget):
                                   float(ast.literal_eval(value)))
 
         elif self.data['type'] == 'int':
-            self.data['value'] = value
+            self.data['value'] = int(value)
 
         elif self.data['type'] == 'str':
-            self.data['value'] = value
+            self.data['value'] = str(value)
 
         elif self.data['type'] == 'sel':
             self.data['value'] = value

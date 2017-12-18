@@ -88,10 +88,10 @@ class MethodWidget(QWidget):
         self.buildAction.setShortcut('Ctrl+B')
         self.buildAction.setStatusTip('Build numerical method equations')
         self.buildAction.triggered.connect(self._build)
-        buildbutton = QPushButton(build_icon, '')
-        buildbutton.setToolTip('Build numerical method equations')
-        buildbutton.clicked.connect(self._build)
-        buttonsLayout.addWidget(buildbutton)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton .setToolTip('Build numerical method equations')
+        self.buildButton .clicked.connect(self._build)
+        buttonsLayout.addWidget(self.buildButton )
 
         # Latex export Action
         export_icon = QIcon(os.path.join(iconspath, 'latex.png'))
@@ -100,10 +100,10 @@ class MethodWidget(QWidget):
         self.exportAction.setShortcut('Ctrl+L')
         self.exportAction.setStatusTip('Export a LaTeX document that describes the Port-Hamiltonian System')
         self.exportAction.triggered.connect(self._build)
-        exportbutton = QPushButton(export_icon, '')
-        exportbutton.setToolTip('Export a LaTeX document')
-        exportbutton.clicked.connect(self._writelatex)
-        buttonsLayout.addWidget(exportbutton)
+        self.exportButton = QPushButton(export_icon, '')
+        self.exportButton.setToolTip('Export a LaTeX document')
+        self.exportButton.clicked.connect(self._writelatex)
+        buttonsLayout.addWidget(self.exportButton)
 
         # ---------------------------------------------------------------------
         # title widget
@@ -111,6 +111,7 @@ class MethodWidget(QWidget):
         title = 'METHOD'
 
         self.labelWidget = QLineEdit(self.core.label)
+        self.labelWidget.adjustSize()
 
         status_labels = {True: 'OK',
                          False: 'Not OK'}

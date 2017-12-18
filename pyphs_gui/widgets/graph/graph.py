@@ -43,20 +43,24 @@ class GraphWidget(QWidget):
 
         self.graph = Graph(label=self.label)
 
-        dimsLayout = QHBoxLayout()
-        dimsLayout.setContentsMargins(0, 0, 0, 0)
+        self.dimsLayout = QHBoxLayout()
+        self.dimsLayout.setContentsMargins(0, 0, 0, 0)
 
         self.nodesWidget = DescriptionWidget('Nodes', '0', 'Number of nodes')
         self.edgesWidget = DescriptionWidget('Edges', '0', 'Number of edges')
 
-        dimsLayout.addWidget(self.nodesWidget)
-        dimsLayout.addWidget(self.edgesWidget)
-        dimsLayout.addStretch()
+        self.dimsLayout.addWidget(self.nodesWidget)
+        self.dimsLayout.addWidget(self.edgesWidget)
+        self.dimsLayout.addStretch()
+
+        self.dimsWidget = QWidget(self)
+        self.dimsWidget.setLayout(self.dimsLayout)
+
         # ---------------------------------------------------------------------
         # Define Graph Actions
 
-        buttonsLayout = QHBoxLayout()
-        buttonsLayout.setContentsMargins(0, 0, 0, 0)
+        self.buttonsLayout = QHBoxLayout()
+        self.buttonsLayout.setContentsMargins(0, 0, 0, 0)
 
         build_icon = QIcon(os.path.join(iconspath, 'work.png'))
         self.buildAction = QAction(build_icon,
@@ -65,10 +69,10 @@ class GraphWidget(QWidget):
         self.buildAction.setShortcut('Ctrl+G')
         self.buildAction.setStatusTip("Build the graph from the netlist and perform realizability analysis")
         self.buildAction.triggered.connect(self._plot_graph)
-        buildButton = QPushButton(build_icon, '')
-        buildButton.setToolTip("Build the system's graph")
-        buildButton.clicked.connect(self._build)
-        buttonsLayout.addWidget(buildButton)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton.setToolTip("Build the system's graph")
+        self.buildButton.clicked.connect(self._build)
+        self.buttonsLayout.addWidget(self.buildButton)
 
         # PlotGraph Action
         graph_icon = QIcon(os.path.join(iconspath, 'graph.png'))
@@ -77,10 +81,10 @@ class GraphWidget(QWidget):
         self.plotgraphAction.setShortcut('Ctrl+G')
         self.plotgraphAction.setStatusTip("Plot the system's graph")
         self.plotgraphAction.triggered.connect(self._plot_graph)
-        plotgraphButton = QPushButton(graph_icon, '')
-        plotgraphButton.setToolTip("Plot the system's graph")
-        plotgraphButton.clicked.connect(self._plot_graph)
-        buttonsLayout.addWidget(plotgraphButton)
+        self.plotgraphButton = QPushButton(graph_icon, '')
+        self.plotgraphButton.setToolTip("Plot the system's graph")
+        self.plotgraphButton.clicked.connect(self._plot_graph)
+        self.buttonsLayout.addWidget(self.plotgraphButton)
 
         # PlotGraph MSA
         self.plotSTAction = QAction(graph_icon,
@@ -88,10 +92,10 @@ class GraphWidget(QWidget):
         self.plotSTAction.setShortcut('Ctrl+T')
         self.plotSTAction.setStatusTip('Plot the realizability spanning tree')
         self.plotSTAction.triggered.connect(self._plot_spantree)
-        plotSTButton = QPushButton(graph_icon, '')
-        plotSTButton.clicked.connect(self._plot_spantree)
-        plotSTButton.setToolTip('Plot the realizability spanning tree')
-        buttonsLayout.addWidget(plotSTButton)
+        self.plotSTButton = QPushButton(graph_icon, '')
+        self.plotSTButton.clicked.connect(self._plot_spantree)
+        self.plotSTButton.setToolTip('Plot the realizability spanning tree')
+        self.buttonsLayout.addWidget(self.plotSTButton)
 
         # ---------------------------------------------------------------------
         # title widget
@@ -103,19 +107,8 @@ class GraphWidget(QWidget):
         self.titleWidget = TitleWidget(title=title,
                                        labelWidget=self.labelWidget,
                                        status_labels=status_labels,
-                                       buttonsLayout=buttonsLayout)
+                                       buttonsLayout=self.buttonsLayout)
 
-
-        # ---------------------------------------------------------------------
-        # set Layout
-        grid = QGridLayout(self)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.addWidget(self.titleWidget, 0, 0)
-        dlw = QWidget()
-        dlw.setLayout(dimsLayout)
-        grid.addWidget(dlw, 1, 0)
-        self.setLayout(grid)
-        self.setContentsMargins(0, 0, 0, 0)
 
         # ---------------------------------------------------------------------
         # signals

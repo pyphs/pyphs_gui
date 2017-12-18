@@ -62,7 +62,7 @@ class CoreWidget(QWidget):
     net = property(get_net)
 
     def get_folder(self):
-        return self.graphWidget.folder
+        return self.graphWidget.netlistWidget.netlist.folder
     folder = property(get_folder)
 
     def get_label(self):
@@ -91,24 +91,27 @@ class CoreWidget(QWidget):
         self.statusSig = BoolSig()
         self.initSig= NoneSig()
 
-        dimsLayout = QHBoxLayout()
-        dimsLayout.setContentsMargins(0, 0, 0, 0)
+        self.dimsLayout = QHBoxLayout()
+        self.dimsLayout.setContentsMargins(0, 0, 0, 0)
 
         self.storageWidget = DescriptionWidget('Storages', '0', 'Dimension of the state vector')
         self.dissipationWidget = DescriptionWidget('Dissipations', '0', 'Dimension of the dissipation vector')
         self.sourceWidget = DescriptionWidget('Ports', '0', 'Dimension of the inpuut/output vectors')
 
-        dimsLayout.addWidget(self.storageWidget)
-        dimsLayout.addWidget(self.dissipationWidget)
-        dimsLayout.addWidget(self.sourceWidget)
-        dimsLayout.addStretch()
-        dimsLayout.setContentsMargins(0, 0, 0, 0)
+        self.dimsLayout.addWidget(self.storageWidget)
+        self.dimsLayout.addWidget(self.dissipationWidget)
+        self.dimsLayout.addWidget(self.sourceWidget)
+        self.dimsLayout.addStretch()
+        self.dimsLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.dimsWidget = QWidget(self)
+        self.dimsWidget.setLayout(self.dimsLayout)
 
         # ---------------------------------------------------------------------
         # Define Core Actions
 
-        buttonsLayout = QHBoxLayout()
-        buttonsLayout.setContentsMargins(0, 0, 0, 0)
+        self.buttonsLayout = QHBoxLayout()
+        self.buttonsLayout.setContentsMargins(0, 0, 0, 0)
 
         # Build Action
         build_icon = QIcon(os.path.join(iconspath, 'work.png'))
@@ -117,10 +120,10 @@ class CoreWidget(QWidget):
         self.buildAction.setShortcut('Ctrl+B')
         self.buildAction.setStatusTip('Build Port-Hamiltonian System equations')
         self.buildAction.triggered.connect(self._build)
-        buildbutton = QPushButton(build_icon, '')
-        buildbutton.setToolTip('Build Port-Hamiltonian System equations')
-        buildbutton.clicked.connect(self._build)
-        buttonsLayout.addWidget(buildbutton)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton.setToolTip('Build Port-Hamiltonian System equations')
+        self.buildButton.clicked.connect(self._build)
+        self.buttonsLayout.addWidget(self.buildButton)
 
         # Latex export Action
         export_icon = QIcon(os.path.join(iconspath, 'latex.png'))
@@ -129,10 +132,10 @@ class CoreWidget(QWidget):
         self.exportAction.setShortcut('Ctrl+L')
         self.exportAction.setStatusTip('Export a LaTeX document that describes the Port-Hamiltonian System')
         self.exportAction.triggered.connect(self._writelatex)
-        exportbutton = QPushButton(export_icon, '')
-        exportbutton.setToolTip('Export a LaTeX document')
-        exportbutton.clicked.connect(self._writelatex)
-        buttonsLayout.addWidget(exportbutton)
+        self.exportButton = QPushButton(export_icon, '')
+        self.exportButton.setToolTip('Export a LaTeX document')
+        self.exportButton.clicked.connect(self._writelatex)
+        self.buttonsLayout.addWidget(self.exportButton)
 
         # ---------------------------------------------------------------------
         # title widget
@@ -140,14 +143,14 @@ class CoreWidget(QWidget):
         title = 'CORE'
 
         self.labelWidget = QLineEdit(self.core.label)
-
+        self.labelWidget.adjustSize()
         status_labels = {True: 'OK',
                          False: 'Not OK'}
 
         self.titleWidget = TitleWidget(title=title,
                                        labelWidget=self.labelWidget,
                                        status_labels=status_labels,
-                                       buttonsLayout=buttonsLayout)
+                                       buttonsLayout=self.buttonsLayout)
 
         # ---------------------------------------------------------------------
         # set parameters
@@ -168,16 +171,6 @@ class CoreWidget(QWidget):
         tooltip = 'Core parameters'
 
         self.parametersWidget = ParametersWidget('', content, tooltip)
-
-        # ---------------------------------------------------------------------
-        # set Layout
-        vbox = QVBoxLayout(self)
-        vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.addWidget(self.titleWidget)
-        vbox.addLayout(dimsLayout)
-        vbox.addWidget(self.parametersWidget)
-        self.setLayout(vbox)
-        self.setContentsMargins(0, 0, 0, 0)
 
         # ---------------------------------------------------------------------
         # signals
@@ -248,8 +241,10 @@ class CoreWidget(QWidget):
                                              "Latex Files (*.tex)",
                                              options=options)
         if not fileName == '':
+            folder = filename[:filename.rfind(os.sep)]
             content = netlist2tex(self.graphWidget.netlistWidget.netlist)
-            content += graphplot2tex(self.graphWidget.graph)
+            content += graphplot2tex(self.graphWidget.graph,
+                                     folder=folder)
             content += core2tex(self.core)
             title = self.core.label
             texdocument(content, fileName, title)
