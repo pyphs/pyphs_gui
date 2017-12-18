@@ -83,13 +83,14 @@ class TitleWidget(QWidget):
         hbox.addStretch()
         hbox.addLayout(self.buttonsLayout)
         self.setLayout(hbox)
-        self.setFixedWidth(500)
 
     def _change_title(self, title):
+        title = str(title)
         self.titleWidget.setText(title)
         self.title = title
 
     def _change_label(self, label):
+        label = str(label)
         self.labelWidget.setText(label)
         self.label = label
         self._update_label()
@@ -97,7 +98,7 @@ class TitleWidget(QWidget):
     def _update_label(self, label=None):
         if not label == self.label:
             if label is None:
-                self.label = self.labelWidget.text()
+                self.label = str(self.labelWidget.text())
             else:
                 self.label = label
             self.labelSignal.sig.emit(self.label)

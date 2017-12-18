@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QFileDialog,
                              QHBoxLayout, QPushButton, QLineEdit, QMessageBox)
 
 from ..misc.tools import DescriptionWidget
-from ..misc.signals import BoolSig
+from ..misc.signals import BoolSig, NoneSig
 
 from pyphs import netlist2tex, core2tex, graphplot2tex, texdocument
 from ..misc import TitleWidget, ParametersWidget
@@ -63,6 +63,7 @@ class MethodWidget(QWidget):
         self.method = self.coreWidget.core.to_method()
 
         self.statusSig = BoolSig()
+        self.initSig= NoneSig()
 
         dimsLayout = QHBoxLayout()
         dimsLayout.setContentsMargins(0, 0, 0, 0)
@@ -87,10 +88,10 @@ class MethodWidget(QWidget):
         self.buildAction.setShortcut('Ctrl+B')
         self.buildAction.setStatusTip('Build numerical method equations')
         self.buildAction.triggered.connect(self._build)
-        buildbutton = QPushButton(build_icon, '')
-        buildbutton.setToolTip('Build numerical method equations')
-        buildbutton.clicked.connect(self._build)
-        buttonsLayout.addWidget(buildbutton)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton .setToolTip('Build numerical method equations')
+        self.buildButton .clicked.connect(self._build)
+        buttonsLayout.addWidget(self.buildButton )
 
         # Latex export Action
         export_icon = QIcon(os.path.join(iconspath, 'latex.png'))
@@ -99,10 +100,10 @@ class MethodWidget(QWidget):
         self.exportAction.setShortcut('Ctrl+L')
         self.exportAction.setStatusTip('Export a LaTeX document that describes the Port-Hamiltonian System')
         self.exportAction.triggered.connect(self._build)
-        exportbutton = QPushButton(export_icon, '')
-        exportbutton.setToolTip('Export a LaTeX document')
-        exportbutton.clicked.connect(self._writelatex)
-        buttonsLayout.addWidget(exportbutton)
+        self.exportButton = QPushButton(export_icon, '')
+        self.exportButton.setToolTip('Export a LaTeX document')
+        self.exportButton.clicked.connect(self._writelatex)
+        buttonsLayout.addWidget(self.exportButton)
 
         # ---------------------------------------------------------------------
         # title widget
@@ -110,6 +111,7 @@ class MethodWidget(QWidget):
         title = 'METHOD'
 
         self.labelWidget = QLineEdit(self.core.label)
+        self.labelWidget.adjustSize()
 
         status_labels = {True: 'OK',
                          False: 'Not OK'}
@@ -160,6 +162,12 @@ class MethodWidget(QWidget):
         self.coreWidget.statusSig.sig.connect(self._status_changed)
         self.parametersWidget.modifiedSig.sig.connect(self._update_parameters)
         self.titleWidget.labelSignal.sig.connect(self._update_label)
+        self.coreWidget.initSig.sig.connect(self._netlist_init)
+
+    def _netlist_init(self):
+        label = self.coreWidget.label
+        self._update_label(label)
+        self.initSig.sig.emit()
 
     def _update_parameters(self):
         if not self.parameters == self.parametersWidget.parameters:

@@ -121,8 +121,6 @@ class IoDialog(QDialog):
             widget = item.widget()
             value = widget.data['value']
             self.ioWidget.io[name][j] = value
-            print(name, j, value)
-            print(self.ioWidget.io)
         return onchange
 
     @staticmethod

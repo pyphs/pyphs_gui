@@ -1,463 +1,309 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov  8 22:36:31 2017
+Created on Fri Nov 10 16:05:03 2017
 
 @author: afalaize
 """
 
+
 from __future__ import absolute_import, division, print_function
 
-import sys
+import os
+from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QDialog,
+                             QHBoxLayout, QPushButton, QLineEdit,
+                             QGridLayout)
 
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout,
-                             QApplication, QDialog, QLabel, QGridLayout,
-                             QDialogButtonBox, QLineEdit,
-                             QPushButton, QCheckBox, QMessageBox)
+from ..misc.signals import BoolSig, NoneSig
 
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from ..misc import TitleWidget, ParametersWidget
 
-from ..misc.element import ElementWidget
-from ..misc.signals import NoneSig
-from .editsignal import SignalEdit
+from .signals import Signals
+from .plots import PlotEdit
 
-from pyphs.misc.tools import geteval
-from pyphs import signalgenerator
-import numpy
-
-
-# --------------------------------------------------------------------------- #
-
-class Signal(QWidget):
-
-    def __init__(self, label, parent=None, **data):
-
-        self.data = dict()
-        self.data['which'] = 'zero'
-        self.data['tsig'] = 1.
-        self.data['ncycles'] = 1
-        self.data['tdeb'] = 0.
-        self.data['tend'] = 0.
-        self.data['fs'] = int(1e3)
-        self.data['A'] = 1.
-        self.data['A1'] = 0.
-        self.data['f0'] = 100.
-        self.data['f1'] = None
-        self.data['cycle_ratio'] = 1.
-        self.data['attack_ratio'] = 0.
-        self.data['decay_ratio'] = 0.
-        self.data['ramp_on'] = False
-        self.data['bkgrd_noise'] = 0.
-        self.data['time'] = 1.
-
-        super(Signal, self).__init__(parent)
-
-        self.label = label
-        self.data.update(data)
-
-        self.initUI()
-
-    def initUI(self):
-
-        # define hbox
-        hbox = QHBoxLayout()
-
-        # Edit Widget
-        button = QPushButton('edit')
-        button.clicked.connect(self.on_click)
-        hbox.addWidget(button)
-
-        # Label widget
-        font = QFont()
-        font.setBold(True)
-        label = QLabel(str(self.label)+':')
-        label.setFont(font)
-        hbox.addWidget(label)
-
-        # Value widget
-        self.valueWidget = QLabel('')
-        hbox.addWidget(self.valueWidget)
-
-        hbox.addStretch()
-
-        self.update_value()
-
-        # set layout and show
-        self.setLayout(hbox)
-
-    def update_value(self):
-        value = 'type: {0}, duration: {1}'.format(self.data['which'],
-                                                  self.data['time'])
-        self.valueWidget.setText(value)
-
-    def on_click(self):
-        data, res = Signal.edit(self.label, parent=self, **self.data)
-        if res:
-            self.data = data
-            self.update_value()
-
-    @staticmethod
-    def edit(label, parent=None, **data):
-        dialog = SignalEdit(label, parent, **data)
-        result = dialog.exec_()
-        dialog.update_data()
-        data = dialog.data
-        return (data, result == QDialog.Accepted)
-
-# --------------------------------------------------------------------------- #
-
-
-class Signals(QWidget):
-
-    def __init__(self, method, fs, parent=None):
-
-        super(Signals, self).__init__(parent)
-
-        self.method = method
-
-        self.fs = fs
-
-        self.initUI()
-
-    def initUI(self):
-
-        # define hbox
-        vbox = QVBoxLayout()
-
-        self.signals = {}
-        for u in self.method.u:
-            self.signals.update({u: Signal(str(u), parent=self, fs=self.fs)})
-            vbox.addWidget(self.signals[u])
-
-        # set layout and show
-        self.setLayout(vbox)
-
-    def build_generator(self, symbs, fs, time):
-        sigs = []
-        for u in symbs:
-            signal = self.signals[u]
-            delta = time - signal.data['time']
-            if delta > 0:
-                signal.data['tend'] += delta
-            signal.data['fs'] = fs
-            sigs.append(signalgenerator(**signal.data)())
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.plot(list(signalgenerator(**signal.data)()))
-
-        def u():
-            i = 0
-            while i < time*fs:
-                si = [next(sig) for sig in sigs]
-                i += 1
-                yield numpy.array(si)
-
-        return u
-
-
-# --------------------------------------------------------------------------- #
-
-
-class PlotEdit(QDialog):
-
-    def __init__(self, simu, parent=None):
-
-        super(PlotEdit, self).__init__(parent)
-
-        self.simu = simu
-
-        self.initUI()
-
-    def initUI(self):
-
-        # define vbox
-        vbox = QVBoxLayout()
-
-        self.checkboxes = {}
-        self.hboxes = []
-        self.labels = {}
-
-        for name in ['x', 'dx', 'dxH', 'w', 'z', 'u', 'y', 'p', 'o']:
-            if name == 'dxH':
-                labels = tuple(map(lambda x: 'dHd' + str(x), self.simu.method.x))
-            elif name == 'z':
-                labels = tuple(map(lambda w: 'z' + str(w)[1:], self.simu.method.w))
-            else:
-                labels = tuple(map(str, geteval(self.simu.method, name)))
-            self.labels[name] = labels
-            self.checkboxes[name] = tuple(map(lambda l: QCheckBox(l, self), labels))
-            hbox = QHBoxLayout()
-            for qcb in self.checkboxes[name]:
-                hbox.addWidget(qcb)
-            hbox.addStretch()
-            vbox.addLayout(hbox)
-
-
-        # OK and Cancel buttons
-        hbox_but = QHBoxLayout()
-        hbox_but.addStretch()
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal, self)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        hbox_but.addWidget(buttons)
-        hbox_but.addStretch()
-        vbox.addLayout(hbox_but)
-
-        # set layout and show
-        self.setLayout(vbox)
-        self.setWindowTitle('Select Signals to Plot')
-
-# --------------------------------------------------------------------------- #
+from PyQt5.QtGui import QIcon
+from .. import iconspath
 
 
 class SimulationWidget(QWidget):
 
-    _status = False
-    _label = None
+    def get_net(self):
+        return self.numericWidget.net
+    net = property(get_net)
 
-    config = {'eps': 1e-9,
-              'epsdg': 1e-12,
-              'fs': 48000.0,
-              'maxit': 10}
+    def get_inits(self):
+        return self.numericWidget.inits.inits
+    inits = property(get_inits)
 
-    def get_method(self):
-        return self.methodWidget.method
-    method = property(get_method)
+    def get_io(self):
+        return self.numericWidget.io.io
+    io = property(get_io)
+
+    def get_gains(self):
+        return self.numericWidget.gains.gains
+    gains = property(get_gains)
 
     def get_folder(self):
-        return self.methodWidget.folder
+        return self.numericWidget.folder
     folder = property(get_folder)
+
+    def get_label(self):
+        return self.titleWidget.label
+    label = property(get_label)
+
+    def get_core(self):
+        return self.numericWidget.core
+    core = property(get_core)
+
+    def get_method(self):
+        return self.numericWidget.method
+    method = property(get_method)
+
+    def get_status(self):
+        return self.statusWidget.status
+    status = property(get_status)
+
+    def get_done(self):
+        return self.doneWidget.status
+    done = property(get_done)
+
+    def get_fs(self):
+        return self.numericWidget.parameters['fs']
+    fs = property(get_fs)
+
+    def get_config(self):
+        config = {}
+        config['path'] = self.folder
+        config.update(self.parameters)
+        config.update(self.numericWidget.parameters)
+        return config
+    config = property(get_config)
 
     def __init__(self, numericWidget, parent=None):
 
         super(SimulationWidget, self).__init__(parent)
 
+        self.parameters = {'lang': 'python',
+                           'T': 1.,
+                           }
+
         self.numericWidget = numericWidget
-
-        self.initUI()
-
-
-    def __init__(self, method, path, parent=None):
-
-        self.modifSig = Communicate()
-        self.buildSig = Communicate()
-
-        super(SimulationWidget, self).__init__(parent)
-
-        self.method = None
-
-        self._label = None
-
-        self.config = {'lang': 'python',
-                       'load': {'decim': 1, 'imax': None, 'imin': 0},
-                       'path': path,
-                       'pbar': True,
-                       'T': 0.1}
 
         self.initUI()
 
     def initUI(self):
 
-        # --------------------
+        self.statusSig = BoolSig()
+        self.initSig = NoneSig()
 
-        font = QFont()
-        font.setBold(True)
+        # ---------------------------------------------------------------------
+        # Define simulation Actions
 
-        core_title = QLabel('Simulation')
-        core_title.setFont(font)
+        buttonsLayout = QHBoxLayout()
+        buttonsLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.label = QLineEdit(self._label)
-        self.label.textChanged[str].connect(self.update_label)
+        # Build Action
+        build_icon = QIcon(os.path.join(iconspath, 'work.png'))
+        self.buildAction = QAction(build_icon,
+                                   '&Build numerical evaluation', self)
+        self.buildAction.setShortcut('Ctrl+B')
+        self.buildAction.setStatusTip('Build numerical evaluation')
+        self.buildAction.triggered.connect(self._build)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton.setToolTip('Build numerical evaluation')
+        self.buildButton.clicked.connect(self._build)
+        buttonsLayout.addWidget(self.buildButton)
 
-        self.status = QLabel()
-        self.status.setFont(font)
-        self.done = QLabel()
-        self.done.setFont(font)
+        # process Action
+        process_icon = QIcon(os.path.join(iconspath, 'process.png'))
+        self.processAction = QAction(process_icon,
+                                     '&Run the simulation', self)
+        self.processAction.setShortcut('Ctrl+L')
+        self.processAction.setStatusTip('Run the simulation')
+        self.processAction.triggered.connect(self._build)
+        self.processButton = QPushButton(process_icon, '')
+        self.processButton.setToolTip('Run the simulation')
+        self.processButton.clicked.connect(self._process)
+        buttonsLayout.addWidget(self.processButton)
 
-        self.set_status(False)
+        # plot Action
+        plot_icon = QIcon(os.path.join(iconspath, 'plot.png'))
+        self.plotAction = QAction(plot_icon,
+                                  '&Plot simulation results', self)
+        self.plotAction.setShortcut('Ctrl+L')
+        self.plotAction.setStatusTip('Plot simulation results')
+        self.plotAction.triggered.connect(self._build)
+        self.plotButton = QPushButton(plot_icon, '')
+        self.plotButton.setToolTip('Plot simulation results')
+        self.plotButton.clicked.connect(self._plot)
+        buttonsLayout.addWidget(self.plotButton)
 
-        title = QHBoxLayout()
+        # ---------------------------------------------------------------------
+        # title widget
 
-        title.addWidget(core_title)
-        title.addWidget(self.label)
-        title.addStretch()
-        title.addWidget(self.status)
-        title.addWidget(self.done)
+        title = 'SIMULATION'
 
-        # --------------------
+        self.labelWidget = QLineEdit(self.method.label)
 
-        self.positions = {'fs': (0, 0), 'T': (0, 1),
-                          'maxit': (1, 0), 'eps': (1, 1),
-                          'lang': (2, 0),
-                          }
+        self.titleWidget = TitleWidget(title=title,
+                                       labelWidget=self.labelWidget,
+                                       status_labels=None,
+                                       buttonsLayout=buttonsLayout)
 
-        self.content = {'lang': {'desc': 'Computing Language',
-                                 'label': 'Language',
-                                 'value': self.config['lang'],
-                                 'type': 'sel',
-                                 'choices': ['python', 'c++']
-                                 },
-                        'fs': {'desc': 'Sample Rate (Hz)',
-                               'label': 'Sample Rate',
-                               'value': self.config['fs'],
-                               'type': 'float',
-                               },
+        # ---------------------------------------------------------------------
+        # status widget
 
-                        'T': {'desc': 'Simulation duration (in seconds)',
-                              'label': 'Duration',
-                              'value': self.config['T'],
-                              'type': 'float',
-                              },
-                        'maxit': {'desc': 'Maximum number of implicit iterations.',
-                                  'label': 'Iterations',
-                                  'value': self.config['maxit'],
-                                  'type': 'int',
-                                  },
-                        'eps': {'desc': 'Numerical tolerance on implicit iterations.',
-                                  'label': 'Tolerance',
-                                  'value': self.config['eps'],
-                                  'type': 'float',
-                                  },
+        statusLayout = QHBoxLayout()
+        statusLayout.setContentsMargins(0, 0, 0, 0)
+
+        status_labels = {True: 'OK',
+                         False: 'Not OK'}
+        self.statusWidget = TitleWidget(title='Status',
+                                        labelWidget=None,
+                                        status_labels=status_labels,
+                                        buttonsLayout=None)
+
+        status_labels = {True: 'Done',
+                         False: 'Not run'}
+        self.doneWidget = TitleWidget(title='Process',
+                                      labelWidget=None,
+                                      status_labels=status_labels,
+                                      buttonsLayout=None)
+
+        statusLayout.addWidget(self.statusWidget)
+        statusLayout.addWidget(self.doneWidget)
+        statusLayout.addStretch()
+
+        self.signalsWidget = QWidget()
+        setattr(self.signalsWidget, 'gridLayout', QGridLayout())
+        self.signalsWidget.setLayout(self.signalsWidget.gridLayout)
+        self._init_signals()
+
+        # ---------------------------------------------------------------------
+        # set parameters
+        content = {}
+
+        content['lang'] = {'desc': 'Computing Language',
+                           'label': 'Language',
+                           'value': self.parameters['lang'],
+                           'type': 'sel',
+                           'choices': ['python', 'c++']
+                           }
+        content['T'] = {'desc': 'Simulation duration (in seconds)',
+                        'label': 'Duration',
+                        'value': self.parameters['T'],
+                        'type': 'float',
                         }
 
-        self.grid = QGridLayout()
+        tooltip = 'Simulation parameters'
 
-        for k in self.content.keys():
-            self.grid.addWidget(Element(**self.content[k]), *self.positions[k])
-            item = self.grid.itemAtPosition(*self.positions[k])
-            widget = item.widget()
-            widget.modifSig.signal.connect(self.set_status)
+        self.parametersWidget = ParametersWidget('', content, tooltip)
 
+        # ---------------------------------------------------------------------
+        # set Layout
+#        self.grid = QGridLayout(self)
+#        self.grid.setContentsMargins(0, 0, 0, 0)
+#        self.grid.addWidget(self.titleWidget, 0, 0)
+#        self.grid.addLayout(statusLayout, 1, 0)
+#        self.grid.addWidget(self.parametersWidget, 2, 0)
+#        self.setLayout(self.grid)
+#        self.setContentsMargins(0, 0, 0, 0)
+#
+        # ---------------------------------------------------------------------
+        # signals
+        self.numericWidget.statusSig.sig.connect(self._status_changed)
+        self.parametersWidget.modifiedSig.sig.connect(self._update_parameters)
+        self.titleWidget.labelSignal.sig.connect(self._update_label)
+        self.numericWidget.initSig.sig.connect(self._netlist_init)
+        self.numericWidget.methodWidget.statusSig.sig.connect(self._status_changed)
+        self.numericWidget.methodWidget.statusSig.sig.connect(self._init_signals)
+        self.numericWidget.inits.modifSig.sig.connect(self._init_signals)
+        self.numericWidget.io.modifSig.sig.connect(self._init_signals)
 
-        # --------------------
+    def _init_signals(self, a=None):
 
-        hbox1 = QHBoxLayout()
-        buildbutton = QPushButton('Build SIMULATION')
-        buildbutton.clicked.connect(self._build)
-        hbox1.addWidget(buildbutton)
-
-        buttonprocess = QPushButton('Process')
-        buttonprocess.clicked.connect(self.process)
-        hbox1.addWidget(buttonprocess)
-
-        self.grid.addLayout(hbox1, 2, 1)
-
-        # --------------------
-        hbox2 = QHBoxLayout()
-        buttonplot = QPushButton('Plot')
-        buttonplot.clicked.connect(self.plot)
-        hbox2.addWidget(buttonplot)
-
-        # --------------------
-
-        self.signalgrid = QGridLayout()
-
-        # --------------------
-
-        vbox = QVBoxLayout()
-        vbox.addLayout(title)
-        vbox.addLayout(self.grid)
-        vbox.addLayout(hbox2)
-        vbox.addLayout(self.signalgrid)
-        vbox.addStretch()
-
-        self.setLayout(vbox)
-
-        # --------------------
-        self.setWindowTitle('Simulation')
-
-    def init_signals(self):
-
-        self.signals = Signals(self.method, self.config['fs'], parent=self)
-
-        item = self.signalgrid.itemAtPosition(0, 0)
+        item = self.signalsWidget.gridLayout.itemAtPosition(0, 0)
         if item is not None:
-            widget = item.widget()
-            self.signalgrid.removeWidget(widget)
-            widget.destroy()
-        self.signalgrid.addWidget(self.signals, 0, 0)
+            w = item.widget()
+            self.signalsWidget.gridLayout.removeWidget(w)
+            w.deleteLater()
+            w = None
 
-    def update_config(self):
-        for k in self.content.keys():
-            item = self.grid.itemAtPosition(*self.positions[k])
-            widget = item.widget()
-            self.config[k] = widget.data['value']
+        uconst = list()
+        for c, b in zip(self.inits['u'], self.io['u']):
+            if b:
+                uconst.append(c)
+            else:
+                uconst.append(None)
 
-    def update_label(self, label):
-        self._label = label
+        pconst = list()
+        for c in self.inits['p']:
+            pconst.append(c)
 
-    def process(self):
-        if not self.status.text() == 'Build OK':
-            self._build()
-        self.simu.process()
-        self.set_done(True)
+        w = Signals(self.method, self.fs, uconst, pconst)
+        w.changeSig.sig.connect(self._status_changed)
+        self.signalsWidget.gridLayout.addWidget(w, 0, 0)
 
-    def plot(self):
-        attrs, res = SimulationWidget.plotEdit(self.simu, self)
-        if res:
-            self.simu.data.plot(attrs)
+    def _netlist_init(self):
+        label = self.numericWidget.label
+        self._update_label(label)
+        self.initSig.sig.emit()
+        self._status_changed(False)
 
-    def set_status(self, status=False):
+    def _update_parameters(self):
+        if not self.parameters == self.parametersWidget.parameters:
+            self.parameters.update(self.parametersWidget.parameters)
+            self._status_changed(False)
 
-        if status:
-            text = 'Build OK'
-            color = 'green'
+    def _status_changed(self, s=False):
+        if not s:
+            self._change_status(s)
+            self._change_done(s)
 
-        else:
-            text = 'Build Needed'
-            color = 'red'
-            self.set_done()
+    def _change_status(self, s=False):
+            self.statusWidget._change_status(s)
 
-        self.status.setStyleSheet("QLabel { color: %s}" % color)
-        self.status.setText(text)
+    def _change_done(self, s=False):
+            self.doneWidget._change_status(s)
 
-    def set_done(self, status=False):
+    def _update_label(self, label):
+        if not self.label == label:
+            self.titleWidget._change_label(label)
 
-        if status:
-            text = 'Process OK'
-            color = 'green'
-        else:
-            text = 'Process Needed'
-            color = 'red'
-
-        self.done.setStyleSheet("QLabel { color: %s}" % color)
-        self.done.setText(text)
-
-    def update_method(self, method):
-        self.method = method
-        self.update_label(self.method.label)
-        self.set_status(False)
-        self.set_done(False)
+    def _change_label(self, label):
+        self.titleWidget._change_label(label)
+        self._update_label(label)
 
     def _build(self):
-        self.buildSig.signal.emit()
 
-#        try:
-#            self.update_config()
-#            fs = self.config['fs']
-#            T = self.config.pop('T')
-#            nt = int(T*fs)
-#            self.simu = self.method.to_simulation(config=self.config)
-#            u = self.signals.build_generator(self.simu.method.u, fs, T)
-#            self.simu.init(u=u(), nt=nt)
-#            self.set_status(True)
-#        except:
-#
-#            QMessageBox.question(self, 'Build issue',
-#                                 'Can not build simulation of {}'.format(self._label),
-#                                 QMessageBox.Ok, QMessageBox.Ok)
-#
-        self.update_config()
-        fs = self.config['fs']
-        T = self.config.pop('T')
-        nt = int(T*fs)
-        self.simu = self.method.to_simulation(config=self.config)
-        u = self.signals.build_generator(self.simu.method.u, fs, T)
-        self.simu.init(u=u(), nt=nt)
-        self.set_status(True)
+        if not self.numericWidget.status:
+            self.numericWidget.methodWidget._build()
+
+        config = self.config
+        print(config)
+        T = config.pop('T')
+        self.simu = self.method.to_simulation(config=config,
+                                              inits=self.inits)
+        item = self.signalsWidget.gridLayout.itemAtPosition(0, 0)
+
+        w = item.widget()
+        u, p = w.build_generator(self.method.u, self.method.p,
+                                 config['fs'], T)
+        self.simu.init(u=u(), p=p(), nt=int(config['fs']*T))
+        self.simu.label = self.label
+        self._change_status(True)
+
+    def _process(self):
+        if not self.status:
+            self._build()
+        self.simu.process()
+        self._change_done(True)
+
+    def _plot(self):
+        if self.done:
+            attrs, res = self.plotEdit(self.simu, self)
+            if res:
+                self.simu.data.plot(attrs)
 
     @staticmethod
     def plotEdit(simu, parent=None):
@@ -470,4 +316,4 @@ class SimulationWidget(QWidget):
                     data.append((k, i))
         return (data, result == QDialog.Accepted)
 
-# --------------------------------------------------------------------------- #
+###############################################################################

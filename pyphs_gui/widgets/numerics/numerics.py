@@ -12,7 +12,7 @@ import os
 from PyQt5.QtWidgets import (QWidget, QAction, QVBoxLayout, QFileDialog,
                              QHBoxLayout, QPushButton, QLineEdit, QLabel)
 
-from ..misc.signals import BoolSig
+from ..misc.signals import BoolSig, NoneSig
 
 from pyphs import netlist2tex, core2tex, graphplot2tex, texdocument
 from pyphs.misc import juce, faust
@@ -58,7 +58,7 @@ class NumericWidget(QWidget):
             if self.io.io['u'][i]:
                 inputs.append(self.method.u[i])
             else:
-                inputs.append(self.inits['u'][i])
+                inputs.append(self.inits.inits['u'][i])
             if self.io.io['y'][i]:
                 outputs.append(self.method.y[i])
             else:
@@ -85,6 +85,7 @@ class NumericWidget(QWidget):
         self.numeric = self.method.to_numeric()
 
         self.statusSig = BoolSig()
+        self.initSig = NoneSig()
 
         # ---------------------------------------------------------------------
         # Define Method Actions
@@ -98,10 +99,10 @@ class NumericWidget(QWidget):
         self.cppAction.setShortcut('Ctrl+L')
         self.cppAction.setStatusTip('Export a bunch of c++ for numerical simulations')
         self.cppAction.triggered.connect(self._writecpp)
-        cppbutton = QPushButton(cpp_icon, '')
-        cppbutton.setToolTip('Export c++ code')
-        cppbutton.clicked.connect(self._writecpp)
-        buttonsLayout.addWidget(cppbutton)
+        self.cppButton = QPushButton(cpp_icon, '')
+        self.cppButton.setToolTip('Export c++ code')
+        self.cppButton.clicked.connect(self._writecpp)
+        buttonsLayout.addWidget(self.cppButton)
 
         # faust export Action
         faust_icon = QIcon(os.path.join(iconspath, 'faust.png'))
@@ -110,10 +111,10 @@ class NumericWidget(QWidget):
         self.faustAction.setShortcut('Ctrl+L')
         self.faustAction.setStatusTip('Export FAUST code')
         self.faustAction.triggered.connect(self._writefaust)
-        faustbutton = QPushButton(faust_icon, '')
-        faustbutton.setToolTip('Export FAUST code')
-        faustbutton.clicked.connect(self._writefaust)
-        buttonsLayout.addWidget(faustbutton)
+        self.faustButton = QPushButton(faust_icon, '')
+        self.faustButton.setToolTip('Export FAUST code')
+        self.faustButton.clicked.connect(self._writefaust)
+        buttonsLayout.addWidget(self.faustButton)
 
         # juce export Action
         juce_icon = QIcon(os.path.join(iconspath, 'juce.png'))
@@ -122,10 +123,10 @@ class NumericWidget(QWidget):
         self.juceAction.setShortcut('Ctrl+L')
         self.juceAction.setStatusTip('Export JUCE code')
         self.juceAction.triggered.connect(self._writejuce)
-        jucebutton = QPushButton(juce_icon, '')
-        jucebutton.setToolTip('Export JUCE code')
-        jucebutton.clicked.connect(self._writejuce)
-        buttonsLayout.addWidget(jucebutton)
+        self.juceButton = QPushButton(juce_icon, '')
+        self.juceButton.setToolTip('Export JUCE code')
+        self.juceButton.clicked.connect(self._writejuce)
+        buttonsLayout.addWidget(self.juceButton)
 
         # ---------------------------------------------------------------------
         # title widget
@@ -143,7 +144,6 @@ class NumericWidget(QWidget):
 
         self.titleWidget = QWidget()
         self.titleWidget.setLayout(titleLayout)
-        self.titleWidget.setFixedWidth(TitleWidget().width())
 
         # ---------------------------------------------------------------------
         # set parameters
@@ -175,13 +175,11 @@ class NumericWidget(QWidget):
         # inits
 
         self.inits = InitWidget(self.methodWidget)
-        self.inits.setFixedWidth(TitleWidget().width())
 
         # ---------------------------------------------------------------------
         # io
 
         self.io = IoWidget(self.methodWidget)
-        self.io.setFixedWidth(TitleWidget().width())
 
         # ---------------------------------------------------------------------
         # set Layout
@@ -194,12 +192,22 @@ class NumericWidget(QWidget):
         self.setLayout(vbox)
         self.setContentsMargins(0, 0, 0, 0)
 
+        self.methodWidget.initSig.sig.connect(self._netlist_init)
+        self.parametersWidget.modifiedSig.sig.connect(self._modified)
+
+    def _netlist_init(self):
+        self.initSig.sig.emit()
+
+    def _modified(self):
+        self._update_parameters()
+        self.statusSig.sig.emit(False)
+
     def _update_parameters(self):
         if not self.parameters == self.parametersWidget.parameters:
             self.parameters.update(self.parametersWidget.parameters)
 
     def _writecpp(self):
-        if not self.methodWidget.status.text() == 'Build OK':
+        if not self.status:
             self.methodWidget._build()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -211,11 +219,10 @@ class NumericWidget(QWidget):
                                              options=options)
         if not folder == '':
             folder = os.path.join(folder, self.method.label + '_Sources')
-            self.update_config()
             args = {'objlabel': self.method.label,
                     'path': folder,
                     'inits': self.inits.inits,
-                    'config': self.config,
+                    'config': self.parameters,
                     'subs': None
                     }
             self.method.to_cpp(**args)
@@ -232,13 +239,21 @@ class NumericWidget(QWidget):
                                              self.folder,
                                              options=options)
         if not folder == '':
+            inputs = []
+            for i, u in enumerate(self.method.u):
+                if self.io.io['u'][i]:
+                    inputs.append(u)
+            outputs = []
+            for i, y in enumerate(self.method.y):
+                if self.io.io['y'][i]:
+                    outputs.append(y)
             juce.fx.method2jucefx(self.method, path=folder,
-                             io=self.inout, inits=self.inits.inits,
-                             config=self.parameters)
+                                  io=(inputs, outputs), inits=self.inits.inits,
+                                  config=self.parameters)
 
     def _writefaust(self):
-        if not self.methodWidget.coreWidget.status:
-            self.methodWidget.coreWidget._build()
+        if not self.status:
+            self.methodWidget._build()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         dialog = QFileDialog()
@@ -251,15 +266,12 @@ class NumericWidget(QWidget):
                                           "FAUST code (*.dsp)",
                                           options=options)
         if not fname == '':
-            if not self.methodWidget.status.text() == 'Build OK':
-                self.methodWidget._build()
             if not fname.endswith('.dsp'):
                 fname += '.dsp'
-            print('FAUST: preinversion')
-            methodIMat = faust.MethodInvMat(self.method._core,
-                                            self.methodWidget.config,
-                                            self.method.label)
             print('FAUST: write '+fname)
+            methodIMat = faust.MethodInvMat(self.method._core,
+                                            self.methodWidget.parameters,
+                                            self.method.label)
 
             faust.write_faust_fx(methodIMat, path=fname,
                                  inputs=self.inout[0], outputs=self.inout[1],

@@ -120,6 +120,7 @@ class IoWidget(QWidget):
         res = dialog.getInits(self, self)
         if res[1]:
             self.io = res[0]
+            self.modifSig.sig.emit()
 
     def _load(self):
         if not self.methodWidget.status:
@@ -149,6 +150,7 @@ class IoWidget(QWidget):
                     else:
                         values = []
                     self.io[name] = values
+            self.modifSig.sig.emit()
 
     def _save(self):
         options = QFileDialog.Options()

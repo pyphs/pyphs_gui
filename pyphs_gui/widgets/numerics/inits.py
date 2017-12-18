@@ -120,6 +120,7 @@ class InitWidget(QWidget):
         res = dialog.getInits(self, self)
         if res[1]:
             self.inits = res[0]
+        self.modifSig.sig.emit()
 
     def _load(self):
         if not self.methodWidget.status:
@@ -148,6 +149,7 @@ class InitWidget(QWidget):
                     else:
                         values = []
                     self.inits[name] = values
+        self.modifSig.sig.emit()
 
     def _save(self):
         options = QFileDialog.Options()

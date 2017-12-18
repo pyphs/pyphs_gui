@@ -73,10 +73,12 @@ class NetlistWidget(QWidget):
         self.tableWidget.setHorizontalHeaderLabels(horHeaders)
 
         self.tableWidget.setFixedWidth(520)
+        self.tableWidget.setFixedHeight(200)
+
         # ---------------------------------------------------------------------
         # Define Netlist File Actions
 
-        buttonsLayout = QHBoxLayout()
+        self.buttonsLayout = QHBoxLayout()
 
         # New Action
         new_icon = QIcon(os.path.join(iconspath, 'new.png'))
@@ -85,10 +87,10 @@ class NetlistWidget(QWidget):
         self.newAction.setShortcut('Ctrl+N')
         self.newAction.setStatusTip('Create a new netlist')
         self.newAction.triggered.connect(self._new)
-        newButton = QPushButton(new_icon, '')
-        newButton.setToolTip('Create a new netlist')
-        newButton.clicked.connect(self._new)
-        buttonsLayout.addWidget(newButton)
+        self.newButton = QPushButton(new_icon, '')
+        self.newButton.setToolTip('Create a new netlist')
+        self.newButton.clicked.connect(self._new)
+        self.buttonsLayout.addWidget(self.newButton)
 
         # Open Action
         open_icon = QIcon(os.path.join(iconspath, 'open.png'))
@@ -97,10 +99,10 @@ class NetlistWidget(QWidget):
         self.openAction.setShortcut('Ctrl+O')
         self.openAction.setStatusTip('Open an existing netlist')
         self.openAction.triggered.connect(self._open)
-        openButton = QPushButton(open_icon, '')
-        openButton.setToolTip('Open an existing netlist')
-        openButton.clicked.connect(self._open)
-        buttonsLayout.addWidget(openButton)
+        self.openButton = QPushButton(open_icon, '')
+        self.openButton.setToolTip('Open an existing netlist')
+        self.openButton.clicked.connect(self._open)
+        self.buttonsLayout.addWidget(self.openButton)
 
         # Save Action
         save_icon = QIcon(os.path.join(iconspath, 'save.png'))
@@ -109,10 +111,10 @@ class NetlistWidget(QWidget):
         self.saveAction.setShortcut('Ctrl+S')
         self.saveAction.setStatusTip('Save the netlist')
         self.saveAction.triggered.connect(self._save)
-        saveButton = QPushButton(save_icon, '')
-        saveButton.setToolTip('Save the netlist')
-        saveButton.clicked.connect(self._save)
-        buttonsLayout.addWidget(saveButton)
+        self.saveButton = QPushButton(save_icon, '')
+        self.saveButton.setToolTip('Save the netlist')
+        self.saveButton.clicked.connect(self._save)
+        self.buttonsLayout.addWidget(self.saveButton)
 
         # Saveas Action
         saveas_icon = QIcon(os.path.join(iconspath, 'saveas.png'))
@@ -121,15 +123,15 @@ class NetlistWidget(QWidget):
         self.saveasAction.setShortcut('Ctrl+Shift+S')
         self.saveasAction.setStatusTip('Save as a new netlist')
         self.saveasAction.triggered.connect(self._saveas)
-        saveasButton = QPushButton(saveas_icon, '')
-        saveasButton.setToolTip('Save the netlist as a new netlist')
-        saveasButton.clicked.connect(self._saveas)
-        buttonsLayout.addWidget(saveasButton)
+        self.saveasButton = QPushButton(saveas_icon, '')
+        self.saveasButton.setToolTip('Save the netlist as a new netlist')
+        self.saveasButton.clicked.connect(self._saveas)
+        self.buttonsLayout.addWidget(self.saveasButton)
 
         # ---------------------------------------------------------------------
         # Define Netlist Line Actions
 
-        actionsLayout = QHBoxLayout()
+        self.actionsLayout = QHBoxLayout()
 
         # Editline Action
         edit_icon = QIcon(os.path.join(iconspath, 'edit.png'))
@@ -138,10 +140,10 @@ class NetlistWidget(QWidget):
         self.editAction.setShortcut('Ctrl+E')
         self.editAction.setStatusTip('Edit an existing line of the netlist')
         self.editAction.triggered.connect(self._edit_line)
-        editButton = QPushButton(edit_icon, '')
-        editButton.setToolTip('Edit an existing line of the netlist')
-        editButton.clicked.connect(self._edit_line)
-        actionsLayout.addWidget(editButton)
+        self.editButton = QPushButton(edit_icon, '')
+        self.editButton.setToolTip('Edit an existing line of the netlist')
+        self.editButton.clicked.connect(self._edit_line)
+        self.actionsLayout.addWidget(self.editButton)
 
         # addline Action
         add_icon = QIcon(os.path.join(iconspath, 'add.png'))
@@ -150,10 +152,10 @@ class NetlistWidget(QWidget):
         self.addlineAction.setShortcut('Ctrl+L')
         self.addlineAction.setStatusTip('Add a new line to the netlist')
         self.addlineAction.triggered.connect(self._new_line)
-        addlineButton = QPushButton(add_icon, '')
-        addlineButton.setToolTip('Add a new line to the netlist')
-        addlineButton.clicked.connect(self._new_line)
-        actionsLayout.addWidget(addlineButton)
+        self.addlineButton = QPushButton(add_icon, '')
+        self.addlineButton.setToolTip('Add a new line to the netlist')
+        self.addlineButton.clicked.connect(self._new_line)
+        self.actionsLayout.addWidget(self.addlineButton)
 
         # delline Action
         del_icon = QIcon(os.path.join(iconspath, 'del.png'))
@@ -162,43 +164,39 @@ class NetlistWidget(QWidget):
         self.dellineAction.setShortcut('Ctrl+L')
         self.dellineAction.setStatusTip('Delete a line from the netlist')
         self.dellineAction.triggered.connect(self._del_line)
-        dellineButton = QPushButton(del_icon, '')
-        dellineButton.setToolTip('Delete a line from the netlist')
-        dellineButton.clicked.connect(self._del_line)
-        actionsLayout.addWidget(dellineButton)
+        self.dellineButton = QPushButton(del_icon, '')
+        self.dellineButton.setToolTip('Delete a line from the netlist')
+        self.dellineButton.clicked.connect(self._del_line)
+        self.actionsLayout.addWidget(self.dellineButton)
 
-        actionsLayout.addStretch()
+        self.actionsLayout.addStretch()
 
         # ---------------------------------------------------------------------
         # Datum widget
         desc = 'Key for reference node (e.g. electrical grounds and mechanical reference points).'
-        datumWidget = DescriptionWidget('datum',
-                                        datum,
-                                        desc)
-        actionsLayout.addWidget(datumWidget)
+        self.datumWidget = DescriptionWidget('datum',
+                                             datum,
+                                             desc)
+
+#        self.actionsLayout.addWidget(datumWidget)
+#
+#        self.actionsWidget = QWidget(self)
+#        self.actionsWidget.setLayout(self.actionsLayout)
 
         # ---------------------------------------------------------------------
         # title widget
 
         title = 'NETLIST'
-        self.labelWidget = QLabel()
+        self.labelWidget = QLabel(self)
         status_labels = {True: 'Saved',
                          False: 'Not Saved'}
         self.titleWidget = TitleWidget(title=title,
                                        labelWidget=self.labelWidget,
                                        status_labels=status_labels,
-                                       buttonsLayout=buttonsLayout)
+                                       buttonsLayout=self.buttonsLayout)
 
         self.tableWidget.setMaximumWidth(self.titleWidget.width())
 
-        # ---------------------------------------------------------------------
-        # set Layout
-        vbox = QVBoxLayout(self)
-        vbox.addWidget(self.titleWidget)
-        vbox.addLayout(actionsLayout)
-        vbox.addWidget(self.tableWidget)
-        self.setLayout(vbox)
-        self.setFixedWidth(544)
 
     def initMessage(self):
         msgBox = QMessageBox(self)

@@ -121,8 +121,6 @@ class InitDialog(QDialog):
             widget = item.widget()
             value = widget.data['value']
             self.initWidget.inits[name][j] = value
-            print(name, j, value)
-            print(self.initWidget.inits)
         return onchange
 
     @staticmethod

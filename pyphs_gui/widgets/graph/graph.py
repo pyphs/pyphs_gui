@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 from PyQt5.QtWidgets import (QWidget, QAction, QLabel, QVBoxLayout,
-                             QHBoxLayout, QPushButton)
+                             QHBoxLayout, QPushButton, QGridLayout)
 
 from PyQt5.QtGui import QIcon
 
@@ -41,22 +41,26 @@ class GraphWidget(QWidget):
 
     def initUI(self):
 
-        self.graph = Graph(label=self.netlistWidget.label)
+        self.graph = Graph(label=self.label)
 
-        dimsLayout = QHBoxLayout()
-        dimsLayout.setContentsMargins(0, 0, 0, 0)
+        self.dimsLayout = QHBoxLayout()
+        self.dimsLayout.setContentsMargins(0, 0, 0, 0)
 
         self.nodesWidget = DescriptionWidget('Nodes', '0', 'Number of nodes')
         self.edgesWidget = DescriptionWidget('Edges', '0', 'Number of edges')
 
-        dimsLayout.addWidget(self.nodesWidget)
-        dimsLayout.addWidget(self.edgesWidget)
-        dimsLayout.addStretch()
+        self.dimsLayout.addWidget(self.nodesWidget)
+        self.dimsLayout.addWidget(self.edgesWidget)
+        self.dimsLayout.addStretch()
+
+        self.dimsWidget = QWidget(self)
+        self.dimsWidget.setLayout(self.dimsLayout)
+
         # ---------------------------------------------------------------------
         # Define Graph Actions
 
-        buttonsLayout = QHBoxLayout()
-        buttonsLayout.setContentsMargins(0, 0, 0, 0)
+        self.buttonsLayout = QHBoxLayout()
+        self.buttonsLayout.setContentsMargins(0, 0, 0, 0)
 
         build_icon = QIcon(os.path.join(iconspath, 'work.png'))
         self.buildAction = QAction(build_icon,
@@ -65,10 +69,10 @@ class GraphWidget(QWidget):
         self.buildAction.setShortcut('Ctrl+G')
         self.buildAction.setStatusTip("Build the graph from the netlist and perform realizability analysis")
         self.buildAction.triggered.connect(self._plot_graph)
-        buildButton = QPushButton(build_icon, '')
-        buildButton.setToolTip("Build the system's graph")
-        buildButton.clicked.connect(self._build)
-        buttonsLayout.addWidget(buildButton)
+        self.buildButton = QPushButton(build_icon, '')
+        self.buildButton.setToolTip("Build the system's graph")
+        self.buildButton.clicked.connect(self._build)
+        self.buttonsLayout.addWidget(self.buildButton)
 
         # PlotGraph Action
         graph_icon = QIcon(os.path.join(iconspath, 'graph.png'))
@@ -77,10 +81,10 @@ class GraphWidget(QWidget):
         self.plotgraphAction.setShortcut('Ctrl+G')
         self.plotgraphAction.setStatusTip("Plot the system's graph")
         self.plotgraphAction.triggered.connect(self._plot_graph)
-        plotgraphButton = QPushButton(graph_icon, '')
-        plotgraphButton.setToolTip("Plot the system's graph")
-        plotgraphButton.clicked.connect(self._plot_graph)
-        buttonsLayout.addWidget(plotgraphButton)
+        self.plotgraphButton = QPushButton(graph_icon, '')
+        self.plotgraphButton.setToolTip("Plot the system's graph")
+        self.plotgraphButton.clicked.connect(self._plot_graph)
+        self.buttonsLayout.addWidget(self.plotgraphButton)
 
         # PlotGraph MSA
         self.plotSTAction = QAction(graph_icon,
@@ -88,10 +92,10 @@ class GraphWidget(QWidget):
         self.plotSTAction.setShortcut('Ctrl+T')
         self.plotSTAction.setStatusTip('Plot the realizability spanning tree')
         self.plotSTAction.triggered.connect(self._plot_spantree)
-        plotSTButton = QPushButton(graph_icon, '')
-        plotSTButton.clicked.connect(self._plot_spantree)
-        plotSTButton.setToolTip('Plot the realizability spanning tree')
-        buttonsLayout.addWidget(plotSTButton)
+        self.plotSTButton = QPushButton(graph_icon, '')
+        self.plotSTButton.clicked.connect(self._plot_spantree)
+        self.plotSTButton.setToolTip('Plot the realizability spanning tree')
+        self.buttonsLayout.addWidget(self.plotSTButton)
 
         # ---------------------------------------------------------------------
         # title widget
@@ -103,22 +107,13 @@ class GraphWidget(QWidget):
         self.titleWidget = TitleWidget(title=title,
                                        labelWidget=self.labelWidget,
                                        status_labels=status_labels,
-                                       buttonsLayout=buttonsLayout)
+                                       buttonsLayout=self.buttonsLayout)
 
-
-        # ---------------------------------------------------------------------
-        # set Layout
-        vbox = QVBoxLayout(self)
-        vbox.setContentsMargins(0, 0, 0, 0)
-        vbox.addWidget(self.titleWidget)
-        vbox.addLayout(dimsLayout)
-        self.setLayout(vbox)
-        self.setContentsMargins(0, 0, 0, 0)
 
         # ---------------------------------------------------------------------
         # signals
         self.netlistWidget.statusSig.sig.connect(self._status_changed)
-        self.netlistWidget.initSig.sig.connect(self._status_changed)
+        self.netlistWidget.initSig.sig.connect(self._netlist_init)
 
     def get_net(self):
         net = set(self.netlistWidget.netlist.netlist().splitlines())
@@ -126,18 +121,20 @@ class GraphWidget(QWidget):
     net = property(get_net)
 
     def get_folder(self):
-        return self.netlistWidget.netlist.folder
+        return self.netlistWidget.folder
     folder = property(get_folder)
 
     def get_label(self):
-        fn = self.netlistWidget.netlist.filename
-        label = fn[:fn.rfind('.')]
-        return label
+        return self.netlistWidget.label
     label = property(get_label)
 
     def _update(self):
         self.nodesWidget.desc.setText(str(self.graph.number_of_nodes()))
         self.edgesWidget.desc.setText(str(self.graph.number_of_edges()))
+
+    def _netlist_init(self):
+        self.graph.label = self.label
+        self.initSig.sig.emit()
 
     def _status_changed(self, s=False):
         if not s:
